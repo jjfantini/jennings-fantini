@@ -313,7 +313,7 @@ export const DATA = {
       active: true,
       private: false,
       description:
-        "Built a FastAPI-based backend service for automated bookkeeping and financial data processing. Features include RESTful API endpoints, asynchronous operations, and configurable multi-environment support.",
+        "Built a FastAPI-based backend service for generating a customizable podcast generation from any text, topic, urls, or files. Features include RESTful API endpoints, asynchronous operations, and configurable multi-environment support.",
       technologies: [
         "🐍 Python 3.12",
         "⚡ FastAPI",
@@ -337,12 +337,12 @@ export const DATA = {
       title: "Autobook",
       icon: <GlobeIcon className="h-4 w-4 text-black dark:text-neutral-400" />,
       borderColor: "border-neutral-400 dark:border-neutral-400",
-      href: "https://autobook.finance",
+      href: "https://www.auto-book-ai.com",
       dates: "March 2024 - Present",
       active: true,
       private: true,
       description:
-        "Built an automated bookkeeping SaaS platform that streamlines financial record-keeping for small businesses. Features include automated transaction categorization, real-time financial insights, and seamless integration with major accounting software.",
+        "Built an AI-powered SaaS platform that generates a customizable podcast from any text, topic, urls, or files. Users can sign up, customize their podcast, and download or listen to the generated podcast on the platform.",
       technologies: [
         "⚛️ Next.js",
         "🔷 TypeScript",
@@ -358,7 +358,7 @@ export const DATA = {
       links: [
         {
           type: "Website",
-          href: "https://autobook.finance",
+          href: "https://www.auto-book-ai.com",
           icon: <Icons.globe className="size-3" />,
         }
       ],
