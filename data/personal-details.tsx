@@ -166,7 +166,14 @@ export const DATA = {
         "🚀 semantic-release",
         "🐻‍❄️ Polars",
         "🔢 NumPy",
-        "🧮 Custom Built Algorithms"
+        "🧮 Custom Built Algorithms",
+        "🔍 Mypy",
+        "🧱 Pydantic",
+        "📝 Commitizen",
+        "⚡️ Asyncio",
+        "📚 Mkdocs"
+
+
       ],
       links: [
         {
@@ -190,12 +197,18 @@ export const DATA = {
         "Built a FastAPI-based backend service for the humblFINANCE web app, providing API endpoints and data processing capabilities to support financial operations.",
       technologies: [
         "🐍 Python",
-        "⚡ FastAPI",
+        "⚡️ FastAPI",
         "📊 SQLModel",
         "🔄 Alembic",
         "📦 Poetry",
         "🐳 Docker",
-        "🐘 PostgreSQL"
+        "🐘 PostgreSQL",
+        "🔍 Mypy",
+        "🧹 Ruff",
+        "🔄 GitHub Actions",
+        "🔍 pre-commit",
+        "📝 Commitizen",
+        "🧱 Pydantic",
       ],
       links: [
         {
