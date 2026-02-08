@@ -2,6 +2,22 @@ import type { GameConfig } from '@/app/games/_types/game.types'
 
 export const gameConfigs: GameConfig[] = [
   {
+    slug: 'tanks',
+    title: 'Tank Battle',
+    description:
+      'Take turns aiming and firing to blast your opponent in a live multiplayer tank duel.',
+    color: 'from-rose-500 to-orange-500',
+    supportsAI: false,
+    controls: {
+      keyboard: {
+        Aim: 'Left / Right',
+        Power: 'Up / Down',
+        Fire: 'Space'
+      },
+      touch: ['Drag sliders to aim', 'Tap fire button']
+    }
+  },
+  {
     slug: 'snake',
     title: 'Snake',
     description: 'Control the snake, eat the food, and avoid hitting the walls or yourself!',

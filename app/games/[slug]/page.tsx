@@ -7,15 +7,18 @@ import Link from 'next/link'
 import { ArrowLeftIcon } from '@radix-ui/react-icons'
 import SnakeGame from '../_components/SnakeGame'
 import TetrisGame from '../_components/TetrisGame'
+import TankGame from '../_components/TankGame/TankGame'
 import { useIsMobile } from '@/lib/hooks/use-mobile-device'
 import { gamesBySlug } from '@/app/games/_lib/gameConfig'
 
 const gameComponents = {
+  tanks: TankGame,
   snake: SnakeGame,
   tetris: TetrisGame
 }
 
 const gameIcons: Record<string, string> = {
+  tanks: '🛡️',
   snake: '🐍',
   tetris: '🧱'
 }

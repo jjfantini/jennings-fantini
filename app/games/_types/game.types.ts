@@ -1,5 +1,6 @@
 export type GameState = 'IDLE' | 'PLAYING' | 'PAUSED' | 'GAME_OVER'
 export type Difficulty = 'easy' | 'medium' | 'hard'
+export type MultiplayerStatus = 'waiting' | 'playing' | 'finished'
 
 export type GameStatItem = {
   label: string
