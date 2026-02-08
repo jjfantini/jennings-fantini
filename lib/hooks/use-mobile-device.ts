@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react';
 
 type DeviceType = 'iPhone' | 'iPad' | 'NavBar';
@@ -8,8 +10,16 @@ const BREAKPOINTS = {
   NavBar: 430
 } as const;
 
+// Helper function to check if we're on mobile
+const checkIsMobile = (device: DeviceType): boolean => {
+  if (typeof window === 'undefined') return false;
+  const breakpoint = BREAKPOINTS[device];
+  return window.innerWidth < breakpoint;
+};
+
 export function useIsMobile(device: DeviceType = 'iPhone') {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
+  // Initialize with actual value if window is available (client-side)
+  const [isMobile, setIsMobile] = React.useState<boolean>(() => checkIsMobile(device));
 
   React.useEffect(() => {
     const breakpoint = BREAKPOINTS[device];
@@ -20,10 +30,11 @@ export function useIsMobile(device: DeviceType = 'iPhone') {
     };
     
     mql.addEventListener('change', onChange);
+    // Update on mount to ensure correct value after hydration
     setIsMobile(window.innerWidth < breakpoint);
     
     return () => mql.removeEventListener('change', onChange);
   }, [device]);
 
-  return !!isMobile;
-} 
+  return isMobile;
+}

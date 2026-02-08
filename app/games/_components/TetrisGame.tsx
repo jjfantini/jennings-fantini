@@ -1,26 +1,29 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { motion } from 'motion/react'
-import { useIsMobile } from '@/lib/hooks/use-mobile-device'
-import { ArrowUpIcon, ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, ReloadIcon, PauseIcon, PlayIcon, RocketIcon } from '@radix-ui/react-icons'
+"use client"
 
-// Constants
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { motion } from 'motion/react'
+import { GameShell } from '@/app/games/_components/shared/GameShell'
+import { MobileControls } from '@/app/games/_components/shared/MobileControls'
+import { useGameState } from '@/app/games/_hooks/useGameState'
+import { useGameStorage } from '@/app/games/_hooks/useGameStorage'
+import { useTouchGestures } from '@/app/games/_hooks/useTouchGestures'
+import { useIsMobile } from '@/lib/hooks/use-mobile-device'
+import type { Difficulty, GameStatItem } from '@/app/games/_types/game.types'
+
 const BOARD_WIDTH = 10
 const BOARD_HEIGHT = 20
 const SPEEDS = {
-  easy: 600,   // 6 seconds
-  medium: 450, // 4.5 seconds
-  hard: 300    // 3 seconds
+  easy: 600,
+  medium: 450,
+  hard: 300
 }
 
-// Helper function to convert level number to difficulty string
 const getDifficultyByLevel = (level: number): keyof typeof SPEEDS => {
-  if (level <= 1) return 'easy';
-  if (level <= 3) return 'medium';
-  return 'hard';
+  if (level <= 1) return 'easy'
+  if (level <= 3) return 'medium'
+  return 'hard'
 }
 
-// Tetrimino shapes
 const TETRIMINOS = {
   I: {
     shape: [
@@ -80,36 +83,31 @@ const TETRIMINOS = {
   }
 }
 
-// Counter for unique tetrimino IDs
-const tetriminoIdRef = { current: 0 };
+const tetriminoIdRef = { current: 0 }
 
-// Define a Player type to avoid using 'any'
 type PlayerType = {
-  pos: { x: number, y: number };
+  pos: { x: number; y: number }
   tetrimino: {
-    shape: number[][];
-    color: string;
-  };
-  name: string;
-  collided: boolean;
-  id: number;
+    shape: number[][]
+    color: string
+  }
+  name: string
+  collided: boolean
+  id: number
 }
 
-// Create random tetrimino
 const randomTetrimino = () => {
   const keys = Object.keys(TETRIMINOS)
   const key = keys[Math.floor(Math.random() * keys.length)]
   const tetriminoType = TETRIMINOS[key as keyof typeof TETRIMINOS]
-  
-  // Adjust starting position based on shape width to center it
   const width = tetriminoType.shape[0].length
-  
-  tetriminoIdRef.current++;
-  
+
+  tetriminoIdRef.current += 1
+
   return {
-    pos: { 
-      x: Math.floor(BOARD_WIDTH / 2) - Math.floor(width / 2), 
-      y: 0 
+    pos: {
+      x: Math.floor(BOARD_WIDTH / 2) - Math.floor(width / 2),
+      y: 0
     },
     tetrimino: tetriminoType,
     name: key,
@@ -118,532 +116,470 @@ const randomTetrimino = () => {
   }
 }
 
-// Create empty board
-const createEmptyBoard = () => 
-  Array.from(Array(BOARD_HEIGHT), () => 
-    Array(BOARD_WIDTH).fill(0)
-  )
+const createEmptyBoard = () =>
+  Array.from(Array(BOARD_HEIGHT), () => Array(BOARD_WIDTH).fill(0))
 
-// Type for board cell content
-type CellContent = string | number;
+type CellContent = string | number
+
+const ControlItem = ({ keys, action }: { keys: string[]; action: string }) => (
+  <div className="flex items-center justify-between text-xs">
+    <div className="flex gap-1">
+      {keys.map(key => (
+        <kbd
+          key={key}
+          className="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-neutral-300 font-mono text-[10px]"
+        >
+          {key}
+        </kbd>
+      ))}
+    </div>
+    <span className="text-neutral-400">{action}</span>
+  </div>
+)
 
 const TetrisGame: React.FC = () => {
+  const { highScore, difficulty: storedDifficulty, saveSettings, updateHighScore } = useGameStorage('tetris')
+  const {
+    gameState,
+    score,
+    setScore,
+    difficulty,
+    setDifficulty,
+    isPaused,
+    isPlaying,
+    isGameOver,
+    isAiEnabled,
+    startGame,
+    pauseGame,
+    resumeGame,
+    resetGame,
+    endGame,
+    toggleAi
+  } = useGameState({
+    initialDifficulty: storedDifficulty,
+    onGameOver: finalScore => updateHighScore(finalScore)
+  })
+
   const [board, setBoard] = useState<CellContent[][]>(createEmptyBoard())
   const [player, setPlayer] = useState<PlayerType>(randomTetrimino())
   const [nextPlayer, setNextPlayer] = useState<PlayerType>(randomTetrimino())
-  const [gameOver, setGameOver] = useState(false)
-  const [score, setScore] = useState(0)
   const [lines, setLines] = useState(0)
   const [level, setLevel] = useState(1)
-  const [isPaused, setIsPaused] = useState(false)
-  const [touchStart, setTouchStart] = useState<{ x: number, y: number, time: number } | null>(null)
-  const [gameStarted, setGameStarted] = useState(false)
-  const [isAiMode, setIsAiMode] = useState(false)
   const [aiActions, setAiActions] = useState<(() => void)[]>([])
-  const [showTouchControls, setShowTouchControls] = useState(false)
-  const [lastTap, setLastTap] = useState<number>(0)
-  
+
   const isMobile = useIsMobile()
-  const boardRef = useRef<HTMLDivElement>(null)
   const requestRef = useRef<number>(0)
   const lastTimeRef = useRef<number>(0)
-  const dropTimeRef = useRef<number>(SPEEDS[getDifficultyByLevel(level)])
+  const dropTimeRef = useRef<number>(SPEEDS[difficulty])
   const accumulatedTimeRef = useRef<number>(0)
   const aiActionTimerRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  
-  // Calculate cell size based on container width and device
+
   const [cellSize, setCellSize] = useState(isMobile ? 22 : 30)
   const [smallCellSize, setSmallCellSize] = useState(isMobile ? 14 : 20)
-  
-  // Update cell size on window resize
+
   useEffect(() => {
     const updateCellSize = () => {
       if (!containerRef.current) return
-      
-      // Get available width
+
       const containerWidth = containerRef.current.clientWidth
       const screenHeight = window.innerHeight
-      
-      // Calculate optimal cell size based on available space
-      const maxCellWidth = Math.floor((containerWidth - 160) / BOARD_WIDTH) // 160px for side panel
+      const maxCellWidth = Math.floor((containerWidth - 160) / BOARD_WIDTH)
       const maxCellHeight = Math.floor((screenHeight * 0.75) / BOARD_HEIGHT)
-      
-      // Use the smaller dimension to ensure it fits
       const optimalCellSize = Math.min(maxCellWidth, maxCellHeight, isMobile ? 26 : 30)
-      
-      setCellSize(Math.max(optimalCellSize, 18)) // Minimum cell size of 18px
+
+      setCellSize(Math.max(optimalCellSize, 18))
       setSmallCellSize(Math.max(Math.floor(optimalCellSize * 0.65), 12))
     }
-    
+
     updateCellSize()
     window.addEventListener('resize', updateCellSize)
     return () => window.removeEventListener('resize', updateCellSize)
   }, [isMobile])
-  
-  // Check for collisions - improved version
-  const checkCollision = useCallback((player: PlayerType, board: CellContent[][], { x: moveX, y: moveY } = { x: 0, y: 0 }) => {
-    for (let y = 0; y < player.tetrimino.shape.length; y++) {
-      for (let x = 0; x < player.tetrimino.shape[y].length; x++) {
-        if (player.tetrimino.shape[y][x] !== 0) {
-          const newY = y + player.pos.y + moveY;
-          const newX = x + player.pos.x + moveX;
-          if (
-            newX < 0 || 
-            newX >= BOARD_WIDTH || 
-            newY >= BOARD_HEIGHT || 
-            (newY >= 0 && board[newY][newX] !== 0)
-          ) {
-            return true;
+
+  useEffect(() => {
+    setDifficulty(storedDifficulty)
+    dropTimeRef.current = SPEEDS[storedDifficulty]
+  }, [setDifficulty, storedDifficulty])
+
+  const checkCollision = useCallback(
+    (activePlayer: PlayerType, activeBoard: CellContent[][], { x: moveX, y: moveY } = { x: 0, y: 0 }) => {
+      for (let y = 0; y < activePlayer.tetrimino.shape.length; y++) {
+        for (let x = 0; x < activePlayer.tetrimino.shape[y].length; x++) {
+          if (activePlayer.tetrimino.shape[y][x] !== 0) {
+            const newY = y + activePlayer.pos.y + moveY
+            const newX = x + activePlayer.pos.x + moveX
+            if (
+              newX < 0 ||
+              newX >= BOARD_WIDTH ||
+              newY >= BOARD_HEIGHT ||
+              (newY >= 0 && activeBoard[newY][newX] !== 0)
+            ) {
+              return true
+            }
           }
         }
       }
-    }
-    return false;
-  }, []);
+      return false
+    },
+    []
+  )
 
-  // Helper functions for AI
-  const placeTetrimino = useCallback((board: CellContent[][], tetrimino: { shape: number[][], color: string }, pos: { x: number, y: number }) => {
-    const newBoard = board.map(row => [...row]);
-    tetrimino.shape.forEach((row, dy) => {
-      row.forEach((cell, dx) => {
-        if (cell !== 0) {
-          const boardY = pos.y + dy;
-          const boardX = pos.x + dx;
-          if (boardY >= 0 && boardY < BOARD_HEIGHT && boardX >= 0 && boardX < BOARD_WIDTH) {
-            newBoard[boardY][boardX] = tetrimino.color;
+  const placeTetrimino = useCallback(
+    (activeBoard: CellContent[][], tetrimino: { shape: number[][]; color: string }, pos: { x: number; y: number }) => {
+      const newBoard = activeBoard.map(row => [...row])
+      tetrimino.shape.forEach((row, dy) => {
+        row.forEach((cell, dx) => {
+          if (cell !== 0) {
+            const boardY = pos.y + dy
+            const boardX = pos.x + dx
+            if (boardY >= 0 && boardY < BOARD_HEIGHT && boardX >= 0 && boardX < BOARD_WIDTH) {
+              newBoard[boardY][boardX] = tetrimino.color
+            }
           }
-        }
-      });
-    });
-    return newBoard;
-  }, []);
+        })
+      })
+      return newBoard
+    },
+    []
+  )
 
-  const clearCompletedLines = useCallback((board: CellContent[][]) => {
-    const newBoard: CellContent[][] = [];
-    let rowsCleared = 0;
+  const clearCompletedLines = useCallback((activeBoard: CellContent[][]) => {
+    const newBoard: CellContent[][] = []
+    let rowsCleared = 0
     for (let y = 0; y < BOARD_HEIGHT; y++) {
-      if (board[y].every(cell => cell !== 0)) {
-        rowsCleared += 1;
+      if (activeBoard[y].every(cell => cell !== 0)) {
+        rowsCleared += 1
       } else {
-        newBoard.push([...board[y]]);
+        newBoard.push([...activeBoard[y]])
       }
     }
     while (newBoard.length < BOARD_HEIGHT) {
-      newBoard.unshift(Array(BOARD_WIDTH).fill(0));
+      newBoard.unshift(Array(BOARD_WIDTH).fill(0))
     }
-    return { newBoard, rowsCleared };
-  }, []);
+    return { newBoard, rowsCleared }
+  }, [])
 
-  const calculateMetrics = useCallback((board: CellContent[][]) => {
-    const heights = Array(BOARD_WIDTH).fill(BOARD_HEIGHT);
+  const calculateMetrics = useCallback((activeBoard: CellContent[][]) => {
+    const heights = Array(BOARD_WIDTH).fill(BOARD_HEIGHT)
     for (let x = 0; x < BOARD_WIDTH; x++) {
       for (let y = 0; y < BOARD_HEIGHT; y++) {
-        if (board[y][x] !== 0) {
-          heights[x] = BOARD_HEIGHT - y;
-          break;
+        if (activeBoard[y][x] !== 0) {
+          heights[x] = BOARD_HEIGHT - y
+          break
         }
       }
     }
-    const actualHeights = heights.map(h => (h < BOARD_HEIGHT ? h : 0));
-    const aggregateHeight = actualHeights.reduce((sum, h) => sum + h, 0);
-    let holes = 0;
+    const actualHeights = heights.map(h => (h < BOARD_HEIGHT ? h : 0))
+    const aggregateHeight = actualHeights.reduce((sum, h) => sum + h, 0)
+    let holes = 0
     for (let x = 0; x < BOARD_WIDTH; x++) {
-      let hasFilledAbove = false;
+      let hasFilledAbove = false
       for (let y = 0; y < BOARD_HEIGHT; y++) {
-        if (board[y][x] !== 0) {
-          hasFilledAbove = true;
+        if (activeBoard[y][x] !== 0) {
+          hasFilledAbove = true
         } else if (hasFilledAbove) {
-          holes++;
+          holes += 1
         }
       }
     }
-    let bumpiness = 0;
+    let bumpiness = 0
     for (let x = 0; x < BOARD_WIDTH - 1; x++) {
-      bumpiness += Math.abs(actualHeights[x] - actualHeights[x + 1]);
+      bumpiness += Math.abs(actualHeights[x] - actualHeights[x + 1])
     }
-    return { aggregateHeight, holes, bumpiness };
-  }, []);
+    return { aggregateHeight, holes, bumpiness }
+  }, [])
 
-  // Find the best move for AI
-  const findBestMove = useCallback(() => {
-    let bestScore = -Infinity;
-    let bestMove = { rotation: 0, x: player.pos.x };
-    const currentBoard = board;
-    const tetrimino = player.tetrimino;
-    const tetriminoName = player.name;
-    const maxRotations = tetriminoName === 'O' ? 1 : (tetriminoName === 'I' || tetriminoName === 'S' || tetriminoName === 'Z' ? 2 : 4);
-
-    for (let rot = 0; rot < maxRotations; rot++) {
-      let rotatedShape = [...tetrimino.shape];
-      for (let r = 0; r < rot; r++) {
-        rotatedShape = rotate(rotatedShape, 1);
-      }
-      const width = rotatedShape[0].length;
-      for (let x = -width + 1; x < BOARD_WIDTH; x++) {
-        const tempPlayer = { 
-          ...player, 
-          tetrimino: { ...tetrimino, shape: rotatedShape }, 
-          pos: { x, y: 0 } 
-        };
-        if (checkCollision(tempPlayer, currentBoard, { x: 0, y: 0 })) continue;
-
-        let dropY = 0;
-        while (!checkCollision(tempPlayer, currentBoard, { x: 0, y: dropY + 1 })) {
-          dropY++;
-        }
-        tempPlayer.pos.y = dropY;
-
-        const newBoard = placeTetrimino(currentBoard, tempPlayer.tetrimino, tempPlayer.pos);
-        const { newBoard: sweptBoard, rowsCleared } = clearCompletedLines(newBoard);
-        const { aggregateHeight, holes, bumpiness } = calculateMetrics(sweptBoard);
-
-        const score = 10 * rowsCleared + (rowsCleared === 4 ? 20 : 0) - 1 * aggregateHeight - 5 * holes - 1 * bumpiness;
-        if (score > bestScore) {
-          bestScore = score;
-          bestMove = { rotation: rot, x };
-        }
-      }
-    }
-    return bestMove;
-  }, [player, board, checkCollision, placeTetrimino, clearCompletedLines, calculateMetrics]);
-
-  // Rotate piece
   const rotate = (matrix: number[][], dir: number) => {
-    // Make the rows become cols (transpose)
-    const rotatedTetrimino = matrix.map((_, index) =>
-      matrix.map(col => col[index])
-    )
-    // Reverse each row to get a rotated matrix
+    const rotatedTetrimino = matrix.map((_, index) => matrix.map(col => col[index]))
     if (dir > 0) return rotatedTetrimino.map(row => row.reverse())
     return rotatedTetrimino.reverse()
   }
 
-  // Update player
-  const updatePlayerPos = useCallback(({ x, y, collided = false }: { x: number, y: number, collided?: boolean }) => {
-    if (gameOver || isPaused) return
+  const findBestMove = useCallback(() => {
+    let bestScore = -Infinity
+    let bestMove = { rotation: 0, x: player.pos.x }
+    const currentBoard = board
+    const tetrimino = player.tetrimino
+    const tetriminoName = player.name
+    const maxRotations = tetriminoName === 'O' ? 1 : tetriminoName === 'I' || tetriminoName === 'S' || tetriminoName === 'Z' ? 2 : 4
 
-    setPlayer(prev => ({
-      ...prev,
-      pos: { x: (prev.pos.x + x), y: (prev.pos.y + y) },
-      collided
-    }))
-  }, [gameOver, isPaused]);
-
-  // Rotate active player
-  const playerRotate = useCallback((board: CellContent[][], dir: number) => {
-    if (gameOver || isPaused) return
-
-    const clonedPlayer = JSON.parse(JSON.stringify(player))
-    clonedPlayer.tetrimino.shape = rotate(clonedPlayer.tetrimino.shape, dir)
-
-    // This one is so the player can't rotate into the walls or other tetriminos
-    const pos = clonedPlayer.pos.x
-    let offset = 1
-    while (checkCollision(clonedPlayer, board)) {
-      clonedPlayer.pos.x += offset
-      offset = -(offset + (offset > 0 ? 1 : -1))
-      if (offset > clonedPlayer.tetrimino.shape[0].length) {
-        rotate(clonedPlayer.tetrimino.shape, -dir)
-        clonedPlayer.pos.x = pos
-        return
+    for (let rot = 0; rot < maxRotations; rot++) {
+      let rotatedShape = [...tetrimino.shape]
+      for (let r = 0; r < rot; r++) {
+        rotatedShape = rotate(rotatedShape, 1)
       }
-    }
-
-    setPlayer(clonedPlayer)
-  }, [player, checkCollision, gameOver, isPaused]);
-
-  // Reset game
-  const resetGame = useCallback((difficulty: keyof typeof SPEEDS) => {
-    setBoard(createEmptyBoard())
-    setPlayer(randomTetrimino())
-    setNextPlayer(randomTetrimino())
-    setScore(0)
-    setLines(0)
-    setLevel(1)
-    setGameOver(false)
-    dropTimeRef.current = SPEEDS[difficulty]
-    accumulatedTimeRef.current = 0
-    setGameStarted(true)
-  }, []);
-
-  // Handle completed rows
-  const sweepRows = useCallback((newBoard: CellContent[][]) => {
-    let rowsCleared = 0
-
-    const sweepedBoard = newBoard.reduce((acc, row) => {
-      // If no cell is 0 (empty), clear the row
-      if (row.findIndex(cell => cell === 0) === -1) {
-        rowsCleared += 1
-        // Add empty row at the beginning
-        acc.unshift(new Array(newBoard[0].length).fill(0))
-        return acc
-      }
-      acc.push(row)
-      return acc
-    }, [] as CellContent[][])
-
-    if (rowsCleared > 0) {
-      // Calculate points
-      const points = [0, 40, 100, 300, 1200][rowsCleared] * level
-      setScore(prev => prev + points)
-      setLines(prev => {
-        const newLines = prev + rowsCleared
-        // Update level
-        const newLevel = Math.floor(newLines / 10) + 1
-        if (newLevel > level) {
-          setLevel(newLevel)
-          dropTimeRef.current = SPEEDS[getDifficultyByLevel(newLevel)]
-          accumulatedTimeRef.current = 0
+      const width = rotatedShape[0].length
+      for (let x = -width + 1; x < BOARD_WIDTH; x++) {
+        const tempPlayer = {
+          ...player,
+          tetrimino: { ...tetrimino, shape: rotatedShape },
+          pos: { x, y: 0 }
         }
-        return newLines
-      })
+        if (checkCollision(tempPlayer, currentBoard, { x: 0, y: 0 })) continue
+
+        let dropY = 0
+        while (!checkCollision(tempPlayer, currentBoard, { x: 0, y: dropY + 1 })) {
+          dropY += 1
+        }
+        tempPlayer.pos.y = dropY
+
+        const newBoard = placeTetrimino(currentBoard, tempPlayer.tetrimino, tempPlayer.pos)
+        const { newBoard: sweptBoard, rowsCleared } = clearCompletedLines(newBoard)
+        const { aggregateHeight, holes, bumpiness } = calculateMetrics(sweptBoard)
+
+        const moveScore = 10 * rowsCleared + (rowsCleared === 4 ? 20 : 0) - 1 * aggregateHeight - 5 * holes - 1 * bumpiness
+        if (moveScore > bestScore) {
+          bestScore = moveScore
+          bestMove = { rotation: rot, x }
+        }
+      }
     }
+    return bestMove
+  }, [player, board, checkCollision, placeTetrimino, clearCompletedLines, calculateMetrics])
 
-    return sweepedBoard
-  }, [level]);
+  const updatePlayerPos = useCallback(
+    ({ x, y, collided = false }: { x: number; y: number; collided?: boolean }) => {
+      if (!isPlaying || isPaused) return
+      setPlayer(prev => ({
+        ...prev,
+        pos: { x: prev.pos.x + x, y: prev.pos.y + y },
+        collided
+      }))
+    },
+    [isPaused, isPlaying]
+  )
 
-  // Check if tetrimino should drop
+  const playerRotate = useCallback(
+    (activeBoard: CellContent[][], dir: number) => {
+      if (!isPlaying || isPaused) return
+      const clonedPlayer = JSON.parse(JSON.stringify(player)) as PlayerType
+      clonedPlayer.tetrimino.shape = rotate(clonedPlayer.tetrimino.shape, dir)
+
+      const pos = clonedPlayer.pos.x
+      let offset = 1
+      while (checkCollision(clonedPlayer, activeBoard)) {
+        clonedPlayer.pos.x += offset
+        offset = -(offset + (offset > 0 ? 1 : -1))
+        if (offset > clonedPlayer.tetrimino.shape[0].length) {
+          rotate(clonedPlayer.tetrimino.shape, -dir)
+          clonedPlayer.pos.x = pos
+          return
+        }
+      }
+
+      setPlayer(clonedPlayer)
+    },
+    [checkCollision, isPaused, isPlaying, player]
+  )
+
+  const sweepRows = useCallback(
+    (newBoard: CellContent[][]) => {
+      let rowsCleared = 0
+      const sweepedBoard = newBoard.reduce((acc, row) => {
+        if (row.findIndex(cell => cell === 0) === -1) {
+          rowsCleared += 1
+          acc.unshift(new Array(newBoard[0].length).fill(0))
+          return acc
+        }
+        acc.push(row)
+        return acc
+      }, [] as CellContent[][])
+
+      if (rowsCleared > 0) {
+        const points = [0, 40, 100, 300, 1200][rowsCleared] * level
+        setScore(prev => prev + points)
+        setLines(prev => {
+          const newLines = prev + rowsCleared
+          const newLevel = Math.floor(newLines / 10) + 1
+          if (newLevel > level) {
+            setLevel(newLevel)
+            dropTimeRef.current = SPEEDS[getDifficultyByLevel(newLevel)]
+            accumulatedTimeRef.current = 0
+          }
+          return newLines
+        })
+      }
+
+      return sweepedBoard
+    },
+    [level, setScore]
+  )
+
   const drop = useCallback(() => {
-    if (gameOver || isPaused) return
-
-    // Increase level when player has cleared 10 rows
+    if (!isPlaying || isPaused) return
     if (lines >= level * 10) {
       setLevel(prev => prev + 1)
-      // Also increase speed
       dropTimeRef.current = SPEEDS[getDifficultyByLevel(level + 1)]
     }
 
     if (checkCollision(player, board, { x: 0, y: 1 })) {
-      // Game over - only if collision happens at the very top of the board
       if (player.pos.y <= 0) {
-        // Check if any filled cells of the tetrimino are truly at the top
-        let topCollision = false;
+        let topCollision = false
         player.tetrimino.shape.forEach((row, y) => {
-          row.forEach((cell) => {
+          row.forEach(cell => {
             if (cell !== 0 && y + player.pos.y <= 0) {
-              topCollision = true;
+              topCollision = true
             }
-          });
-        });
-        
+          })
+        })
         if (topCollision) {
-          setGameOver(true);
-          return;
+          endGame(score)
+          return
         }
       }
-      
-      // Piece has collided
-      // Update board
       setPlayer(prev => ({
         ...prev,
         collided: true
       }))
     } else {
-      // Player moves down
       updatePlayerPos({ x: 0, y: 1, collided: false })
     }
-  }, [player, board, lines, level, gameOver, isPaused, checkCollision, updatePlayerPos]);
+  }, [board, checkCollision, endGame, isPaused, isPlaying, level, lines, player, score, updatePlayerPos])
 
-  // Drop the tetrimino faster
   const dropPlayer = useCallback(() => {
-    if (gameOver || isPaused) return
+    if (!isPlaying || isPaused) return
     drop()
-  }, [drop, gameOver, isPaused]);
+  }, [drop, isPaused, isPlaying])
 
-  // Quick drop
   const hardDrop = useCallback(() => {
-    if (gameOver || isPaused) return
-
+    if (!isPlaying || isPaused) return
     let newY = player.pos.y
     while (!checkCollision(player, board, { x: 0, y: newY - player.pos.y + 1 })) {
       newY += 1
     }
     updatePlayerPos({ x: 0, y: newY - player.pos.y, collided: true })
-  }, [player, board, checkCollision, updatePlayerPos, gameOver, isPaused]);
+  }, [board, checkCollision, isPaused, isPlaying, player, updatePlayerPos])
 
-  // Move player horizontally
-  const movePlayer = useCallback((dir: number) => {
-    if (gameOver || isPaused) return
-
-    if (!checkCollision(player, board, { x: dir, y: 0 })) {
-      updatePlayerPos({ x: dir, y: 0 })
-    }
-  }, [player, board, checkCollision, gameOver, isPaused, updatePlayerPos]);
-
-  // Handle keypress
-  const handleKeyPress = useCallback((e: KeyboardEvent) => {
-    if (isAiMode) return; // Ignore keypresses in AI mode
-    
-    const keyCode = e.keyCode || e.which;
-    
-    // Prevent default behavior for arrow keys and space to avoid page scrolling
-    if ([32, 37, 38, 39, 40].includes(keyCode)) {
-      e.preventDefault();
-    }
-    
-    if (gameOver) {
-      if (keyCode === 13) resetGame('easy')  // Enter key
-      return
-    }
-
-    if (keyCode === 80) {  // P key
-      setIsPaused(prev => !prev)
-      return
-    }
-
-    if (isPaused) return
-
-    switch (keyCode) {
-      case 37:  // Left arrow
-      case 65:  // A key
-        movePlayer(-1)
-        break
-      case 39:  // Right arrow
-      case 68:  // D key
-        movePlayer(1)
-        break
-      case 40:  // Down arrow
-      case 83:  // S key
-        dropPlayer()
-        break
-      case 38:  // Up arrow
-      case 87:  // W key
-        playerRotate(board, 1)
-        break
-      case 32:  // Space
-        hardDrop()
-        break
-      default:
-        break
-    }
-  }, [gameOver, isPaused, movePlayer, dropPlayer, playerRotate, board, hardDrop, resetGame, isAiMode]);
-
-  // Handle touch controls
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touchPos = { 
-      x: e.touches[0].clientX, 
-      y: e.touches[0].clientY,
-      time: Date.now()
-    }
-    setTouchStart(touchPos)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart || gameOver || isPaused) return
-
-    const touchPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const diffX = touchPos.x - touchStart.x
-    const diffY = touchPos.y - touchStart.y
-    const threshold = 20 // Lower threshold for better responsiveness
-
-    // Only register if movement is significant
-    if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
-      if (Math.abs(diffX) > Math.abs(diffY)) {
-        // Horizontal swipe
-        movePlayer(diffX > 0 ? 1 : -1)
-      } else if (diffY > threshold) {
-        // Swipe down
-        dropPlayer()
-      } else if (diffY < -threshold) {
-        // Swipe up
-        playerRotate(board, 1)
+  const movePlayer = useCallback(
+    (dir: number) => {
+      if (!isPlaying || isPaused) return
+      if (!checkCollision(player, board, { x: dir, y: 0 })) {
+        updatePlayerPos({ x: dir, y: 0 })
       }
-      
-      setTouchStart({...touchPos, time: touchStart.time})
-    }
-  }
+    },
+    [board, checkCollision, isPaused, isPlaying, player, updatePlayerPos]
+  )
 
-  const handleTouchEnd = () => {
-    if (!touchStart || gameOver || isPaused) {
-      setTouchStart(null)
-      return
-    }
+  const handleKeyPress = useCallback(
+    (event: KeyboardEvent) => {
+      if (isAiEnabled) return
 
-    const touchEndTime = Date.now()
-    const touchDuration = touchEndTime - touchStart.time
-    
-    // Check for tap (short duration, minimal movement)
-    if (touchDuration < 300) {
-      // Check for double tap (second tap within 300ms of first)
-      const doubleTapDelay = touchEndTime - lastTap
-      if (doubleTapDelay < 300) {
-        // Double tap detected - perform hard drop
-        hardDrop()
-        setLastTap(0) // Reset to prevent triple-tap detection
-      } else {
-        // Single tap - rotate
-        playerRotate(board, 1)
-        setLastTap(touchEndTime)
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
+        event.preventDefault()
       }
-    }
-    
-    setTouchStart(null)
-  }
 
-  // Touch control buttons
-  const handleRotate = () => {
-    if (!gameOver && !isPaused) {
-      playerRotate(board, 1)
-    }
-  }
+      if (event.code === 'KeyP') {
+        if (isPaused) resumeGame()
+        else pauseGame()
+        return
+      }
 
-  const handleMoveLeft = () => {
-    if (!gameOver && !isPaused) {
-      movePlayer(-1)
-    }
-  }
+      if (!isPlaying || isPaused) return
 
-  const handleMoveRight = () => {
-    if (!gameOver && !isPaused) {
-      movePlayer(1)
-    }
-  }
+      switch (event.code) {
+        case 'ArrowLeft':
+        case 'KeyA':
+          movePlayer(-1)
+          break
+        case 'ArrowRight':
+        case 'KeyD':
+          movePlayer(1)
+          break
+        case 'ArrowDown':
+        case 'KeyS':
+          dropPlayer()
+          break
+        case 'ArrowUp':
+        case 'KeyW':
+          playerRotate(board, 1)
+          break
+        case 'Space':
+          hardDrop()
+          break
+        default:
+          break
+      }
+    },
+    [board, dropPlayer, hardDrop, isAiEnabled, isPaused, isPlaying, movePlayer, pauseGame, playerRotate, resumeGame]
+  )
 
-  const handleSoftDrop = () => {
-    if (!gameOver && !isPaused) {
-      dropPlayer()
-    }
-  }
+  const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGestures({
+    onSwipeLeft: () => movePlayer(-1),
+    onSwipeRight: () => movePlayer(1),
+    onSwipeDown: () => dropPlayer(),
+    onSwipeUp: () => playerRotate(board, 1),
+    onTap: () => playerRotate(board, 1),
+    onDoubleTap: () => hardDrop()
+  })
 
-  const handleHardDrop = () => {
-    if (!gameOver && !isPaused) {
-      hardDrop()
-    }
-  }
+  const selectDifficulty = useCallback(
+    (selectedDifficulty: Difficulty) => {
+      setDifficulty(selectedDifficulty)
+      saveSettings(selectedDifficulty)
+      dropTimeRef.current = SPEEDS[selectedDifficulty]
+    },
+    [saveSettings, setDifficulty]
+  )
 
-  // Animation game loop
-  const gameLoop = useCallback((time = 0) => {
-    const deltaTime = time - lastTimeRef.current;
-    lastTimeRef.current = time;
+  const startNewGame = useCallback(
+    (selectedDifficulty: Difficulty) => {
+      setBoard(createEmptyBoard())
+      setPlayer(randomTetrimino())
+      setNextPlayer(randomTetrimino())
+      setScore(0)
+      setLines(0)
+      setLevel(1)
+      setDifficulty(selectedDifficulty)
+      saveSettings(selectedDifficulty)
+      dropTimeRef.current = SPEEDS[selectedDifficulty]
+      accumulatedTimeRef.current = 0
+      startGame()
+    },
+    [saveSettings, setDifficulty, setScore, startGame]
+  )
 
-    if (!isPaused && !gameOver) {
-      if (isAiMode && aiActions.length > 0) {
-        aiActionTimerRef.current += deltaTime;
-        const AI_ACTION_INTERVAL = 100; // ms
-        if (aiActionTimerRef.current >= AI_ACTION_INTERVAL) {
-          const action = aiActions[0];
-          action();
-          setAiActions(prev => prev.slice(1));
-          aiActionTimerRef.current = 0;
-        }
-      } else {
-        accumulatedTimeRef.current += deltaTime;
+  const resetToIdle = useCallback(() => {
+    resetGame()
+    setBoard(createEmptyBoard())
+    setPlayer(randomTetrimino())
+    setNextPlayer(randomTetrimino())
+    setLines(0)
+    setLevel(1)
+    accumulatedTimeRef.current = 0
+  }, [resetGame])
 
-        if (accumulatedTimeRef.current >= dropTimeRef.current) {
-          drop();
-          accumulatedTimeRef.current = 0; // reset accumulator after dropping
+  const gameLoop = useCallback(
+    (time = 0) => {
+      const deltaTime = time - lastTimeRef.current
+      lastTimeRef.current = time
+
+      if (isPlaying && !isPaused) {
+        if (isAiEnabled && aiActions.length > 0) {
+          aiActionTimerRef.current += deltaTime
+          const AI_ACTION_INTERVAL = 100
+          if (aiActionTimerRef.current >= AI_ACTION_INTERVAL) {
+            const action = aiActions[0]
+            action()
+            setAiActions(prev => prev.slice(1))
+            aiActionTimerRef.current = 0
+          }
+        } else {
+          accumulatedTimeRef.current += deltaTime
+          if (accumulatedTimeRef.current >= dropTimeRef.current) {
+            drop()
+            accumulatedTimeRef.current = 0
+          }
         }
       }
-    }
 
-    requestRef.current = requestAnimationFrame(gameLoop);
-  }, [drop, isPaused, gameOver, isAiMode, aiActions]);
+      requestRef.current = requestAnimationFrame(gameLoop)
+    },
+    [aiActions, drop, isAiEnabled, isPaused, isPlaying]
+  )
 
-  // Update board
   useEffect(() => {
     if (player.collided) {
-      // Create a new board with frozen tetriminos
       const newBoard = [...board]
       player.tetrimino.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
@@ -657,17 +593,13 @@ const TetrisGame: React.FC = () => {
         })
       })
 
-      // Sweep the rows and score
       const sweptBoard = sweepRows(newBoard)
       setBoard(sweptBoard)
-
-      // Reset player with next tetrimino
       setPlayer(nextPlayer)
       setNextPlayer(randomTetrimino())
     }
-  }, [player.collided, board, nextPlayer, player.pos.x, player.pos.y, player.tetrimino.color, player.tetrimino.shape, sweepRows]);
+  }, [board, nextPlayer, player, sweepRows])
 
-  // Handle keyboard events
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress)
     return () => {
@@ -675,59 +607,52 @@ const TetrisGame: React.FC = () => {
     }
   }, [handleKeyPress])
 
-  // Trigger AI moves when a new tetrimino spawns
   useEffect(() => {
-    if (isAiMode && !player.collided && gameStarted && !gameOver && !isPaused) {
-      const bestMove = findBestMove();
+    if (isAiEnabled && isPlaying && !isPaused) {
+      const bestMove = findBestMove()
       if (bestMove) {
-        const actions: (() => void)[] = [];
+        const actions: (() => void)[] = []
         for (let i = 0; i < bestMove.rotation; i++) {
-          actions.push(() => playerRotate(board, 1));
+          actions.push(() => playerRotate(board, 1))
         }
-        const dx = bestMove.x - player.pos.x;
+        const dx = bestMove.x - player.pos.x
         if (dx > 0) {
-          for (let i = 0; i < dx; i++) {
-            actions.push(() => movePlayer(1));
-          }
+          for (let i = 0; i < dx; i++) actions.push(() => movePlayer(1))
         } else if (dx < 0) {
-          for (let i = 0; i < -dx; i++) {
-            actions.push(() => movePlayer(-1));
-          }
+          for (let i = 0; i < -dx; i++) actions.push(() => movePlayer(-1))
         }
-        actions.push(hardDrop);
-        setAiActions(actions);
+        actions.push(hardDrop)
+        setAiActions(actions)
       }
     }
-  }, [player.id, isAiMode, gameStarted, gameOver, isPaused, findBestMove, playerRotate, board, movePlayer, hardDrop, player.collided, player.pos.x]);
+  }, [board, findBestMove, hardDrop, isAiEnabled, isPaused, isPlaying, movePlayer, player.pos.x, playerRotate])
 
-  // Start game loop
   useEffect(() => {
-    if (!gameOver) {
-      requestRef.current = requestAnimationFrame(gameLoop)
-    }
+    requestRef.current = requestAnimationFrame(gameLoop)
     return () => {
       cancelAnimationFrame(requestRef.current)
     }
-  }, [gameLoop, gameOver])
+  }, [gameLoop])
 
-  // Define the cell styles dynamically
-  const cellStyle = {
-    width: `${cellSize}px`,
-    height: `${cellSize}px`,
-    border: '1px solid #404040'
-  }
+  const cellStyle = useMemo(
+    () => ({
+      width: `${cellSize}px`,
+      height: `${cellSize}px`,
+      border: '1px solid #404040'
+    }),
+    [cellSize]
+  )
 
-  const smallCellStyle = {
-    width: `${smallCellSize}px`,
-    height: `${smallCellSize}px`
-  }
+  const smallCellStyle = useMemo(
+    () => ({
+      width: `${smallCellSize}px`,
+      height: `${smallCellSize}px`
+    }),
+    [smallCellSize]
+  )
 
-  // Build the game board
   const renderBoard = () => {
-    // Create a fresh board copy 
     const boardCopy = board.map(row => [...row])
-
-    // Add active tetrimino to board copy
     player.tetrimino.shape.forEach((row, y) => {
       row.forEach((cell, x) => {
         if (cell !== 0) {
@@ -739,22 +664,15 @@ const TetrisGame: React.FC = () => {
         }
       })
     })
-
-    // Render the cells
-    return boardCopy.map((row, y) => 
+    return boardCopy.map((row, y) =>
       row.map((cell, x) => (
-        <div
-          key={`${y}-${x}`}
-          className={typeof cell === 'string' ? cell : 'bg-transparent'}
-          style={cellStyle}
-        />
+        <div key={`${y}-${x}`} className={typeof cell === 'string' ? cell : 'bg-transparent'} style={cellStyle} />
       ))
     )
   }
 
-  // Render next piece
-  const renderNextPiece = () => {
-    return nextPlayer.tetrimino.shape.map((row, y) => 
+  const renderNextPiece = () =>
+    nextPlayer.tetrimino.shape.map((row, y) =>
       row.map((cell, x) => (
         <div
           key={`next-${y}-${x}`}
@@ -763,238 +681,140 @@ const TetrisGame: React.FC = () => {
         />
       ))
     )
-  }
 
-  // Board container style
-  const boardContainerStyle = {
-    display: 'grid',
-    gridTemplateColumns: `repeat(${BOARD_WIDTH}, ${cellSize}px)`,
-    width: `${BOARD_WIDTH * cellSize}px`,
-    height: `${BOARD_HEIGHT * cellSize}px`,
-    backgroundColor: '#171717',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-  }
+  const boardContainerStyle = useMemo(
+    () => ({
+      display: 'grid',
+      gridTemplateColumns: `repeat(${BOARD_WIDTH}, ${cellSize}px)`,
+      width: `${BOARD_WIDTH * cellSize}px`,
+      height: `${BOARD_HEIGHT * cellSize}px`
+    }),
+    [cellSize]
+  )
 
-  // Next piece container style
-  const nextPieceContainerStyle = {
-    display: 'grid',
-    gridTemplateColumns: `repeat(${nextPlayer.tetrimino.shape[0].length}, ${smallCellSize}px)`,
-    gap: '2px',
-    padding: '4px',
-    backgroundColor: '#171717',
-    justifyContent: 'center'
-  }
+  const nextPieceContainerStyle = useMemo(
+    () => ({
+      display: 'grid',
+      gridTemplateColumns: `repeat(${nextPlayer.tetrimino.shape[0].length}, ${smallCellSize}px)`,
+      gap: '2px',
+      padding: '4px',
+      backgroundColor: '#171717',
+      justifyContent: 'center'
+    }),
+    [nextPlayer.tetrimino.shape, smallCellSize]
+  )
 
-  // Touch control style
-  const touchButtonStyle = "flex items-center justify-center w-12 h-12 bg-neutral-800 rounded-full shadow-md active:bg-neutral-700"
-  
-  return (
-    <div ref={containerRef} className="flex justify-center select-none w-full">
-      <div className={`flex flex-row items-start gap-3 md:gap-4`}>
-        {/* Left column - Game board with stats on top */}
-        <div className="flex flex-col gap-2">
-          {/* Stats row directly above the game board */}
-          <div className="flex justify-between items-center w-full">
-            <div className="flex gap-2">
-              <div className="bg-neutral-800 dark:bg-neutral-700 px-3 py-1 rounded shadow-sm text-white text-xs">
-                Score: {score}
-              </div>
-              <div className="bg-neutral-800 dark:bg-neutral-700 px-3 py-1 rounded shadow-sm text-white text-xs">
-                Level: {level}
-              </div>
-              <div className="bg-neutral-800 dark:bg-neutral-700 px-3 py-1 rounded shadow-sm text-white text-xs">
-                Lines: {lines}
-              </div>
-            </div>
-          </div>
-          
-          {/* Game board */}
-          <div 
-            ref={boardRef}
-            className="relative"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <motion.div 
-              style={boardContainerStyle}
-              className="bg-neutral-900 dark:bg-neutral-800 shadow-lg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {renderBoard()}
-            </motion.div>
+  const stats: GameStatItem[] = [
+    { label: 'Score', value: score },
+    { label: 'Level', value: level },
+    { label: 'Lines', value: lines },
+    { label: 'High', value: highScore }
+  ]
 
-            {/* Game Over overlay */}
-            {gameOver && (
-              <motion.div 
-                className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 z-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <h2 className="text-3xl font-bold text-white mb-4">Game Over</h2>
-                <p className="text-xl text-white mb-6">Final Score: {score}</p>
-                <Button 
-                  onClick={() => setGameStarted(false)}
-                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Reset
-                </Button>
-              </motion.div>
-            )}
-
-            {/* Pause overlay */}
-            {isPaused && !gameOver && (
-              <motion.div 
-                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 z-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <h2 className="text-3xl font-bold text-white">PAUSED</h2>
-              </motion.div>
-            )}
-
-            {/* Difficulty selection modal */}
-            {!gameStarted && (
-              <motion.div 
-                className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-80 z-20"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="bg-neutral-800 p-6 rounded-lg shadow-lg">
-                  <h2 className="text-2xl font-bold text-white mb-4 text-center">Select Difficulty</h2>
-                  <div className="flex flex-col gap-3">
-                    <Button onClick={() => resetGame('easy')} className="bg-green-500 hover:bg-green-600 text-white w-[140px]">Easy</Button>
-                    <Button onClick={() => resetGame('medium')} className="bg-yellow-500 hover:bg-yellow-600 text-white w-[140px]">Medium</Button>
-                    <Button onClick={() => resetGame('hard')} className="bg-red-500 hover:bg-red-600 text-white w-[140px]">Hard</Button>
-                    {isMobile && (
-                      <div className="mt-2">
-                        <label className="flex items-center text-white text-sm">
-                          <input
-                            type="checkbox"
-                            checked={showTouchControls}
-                            onChange={() => setShowTouchControls(!showTouchControls)}
-                            className="mr-2"
-                          />
-                          Show button controls
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
-          
-          {/* Touch controls for mobile - rendered at bottom of game */}
-          {isMobile && showTouchControls && gameStarted && !gameOver && (
-            <div className="mt-4 w-full">
-              <div className="flex justify-center gap-2 mb-2">
-                <button onClick={handleRotate} className={touchButtonStyle}>
-                  <ArrowUpIcon className="w-6 h-6 text-white" />
-                </button>
-              </div>
-              <div className="flex justify-center gap-6">
-                <button onClick={handleMoveLeft} className={touchButtonStyle}>
-                  <ArrowLeftIcon className="w-6 h-6 text-white" />
-                </button>
-                <button onClick={handleSoftDrop} className={touchButtonStyle}>
-                  <ArrowDownIcon className="w-6 h-6 text-white" />
-                </button>
-                <button onClick={handleMoveRight} className={touchButtonStyle}>
-                  <ArrowRightIcon className="w-6 h-6 text-white" />
-                </button>
-              </div>
-              <div className="flex justify-center mt-2">
-                <button onClick={handleHardDrop} className="flex items-center justify-center w-28 h-10 bg-red-600 rounded-lg shadow-md active:bg-red-700">
-                  <p className="text-white text-sm font-bold">Hard Drop</p>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right column - Info area and buttons */}
-        <div className="flex flex-col gap-4 w-[150px] max-w-[150px]">
-          {/* Action buttons */}
-          <div className="flex flex-col gap-3">
-            <Button 
-              onClick={() => setIsPaused(prev => !prev)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm h-10 flex justify-center items-center rounded-md"
-              disabled={gameOver || !gameStarted}
-            >
-              {isPaused ? <PlayIcon className="w-5 h-5" /> : <PauseIcon className="w-5 h-5" />}
-              <span className={isMobile ? 'hidden' : 'ml-1'}>{isPaused ? 'Resume' : 'Pause'}</span>
-            </Button>
-            <Button 
-              onClick={() => setGameStarted(false)}
-              className="w-full bg-red-600 hover:bg-red-700 text-white text-sm h-10 flex justify-center items-center rounded-md"
-            >
-              <ReloadIcon className="w-5 h-5" />
-              <span className={isMobile ? 'hidden' : 'ml-1'}>Reset</span>
-            </Button>
-            <Button 
-              onClick={() => setIsAiMode(prev => !prev)}
-              className={`w-full ${isAiMode ? 'bg-green-600 hover:bg-green-700' : 'bg-neutral-700 hover:bg-neutral-600'} text-white text-sm h-10 flex justify-center items-center rounded-md`}
-              disabled={gameOver || !gameStarted}
-            >
-              <RocketIcon className="w-5 h-5" />
-              <span className={isMobile ? 'hidden' : 'ml-1'}>{isAiMode ? 'AI On' : 'AI Off'}</span>
-            </Button>
-          </div>
-          
-          {/* Next piece */}
-          <div className="bg-neutral-800 dark:bg-neutral-700 p-3 rounded shadow-md w-full">
-            <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-white ${isMobile ? 'text-center mb-1' : 'mb-1'}`}>Next</h3>
-            <div className="flex justify-center">
-              <div style={nextPieceContainerStyle}>
-                {renderNextPiece()}
-              </div>
-            </div>
-          </div>
-
-          {/* Controls info */}
-          <div className="bg-neutral-800 dark:bg-neutral-700 p-2 rounded shadow-md w-full">
-            <h3 className="text-sm font-bold text-white mb-1">Controls</h3>
-            <div className="text-white text-xs">
-              {isMobile ? (
-                <>
-                  <p className="mb-0.5">Tap / Swipe Up: Rotate</p>
-                  <p className="mb-0.5">Swipe Left: Move Left</p>
-                  <p className="mb-0.5">Swipe Right: Move Right</p>
-                  <p className="mb-0.5">Swipe Down: Soft Drop</p>
-                  <p className="mb-0.5">Double Tap: Hard Drop</p>
-                </>
-              ) : (
-                <>
-                  <p className="mb-0.5">↑ / W: Rotate</p>
-                  <p className="mb-0.5">← / A: Move Left</p>
-                  <p className="mb-0.5">→ / D: Move Right</p>
-                  <p className="mb-0.5">↓ / S: Soft Drop</p>
-                  <p className="mb-0.5">Space: Hard Drop</p>
-                  <p className="mb-0.5">P: Pause</p>
-                </>
-              )}
-              {isAiMode && <p className="mt-1 text-green-400">AI Mode: ON</p>}
-            </div>
-          </div>
-          
-          {/* Toggle touch controls on mobile */}
-          {isMobile && gameStarted && (
-            <Button 
-              onClick={() => setShowTouchControls(!showTouchControls)}
-              className="text-[10px] text-neutral-400 py-0 h-6 w-full"
-              variant="ghost"
-            >
-              {showTouchControls ? 'Hide Button Controls' : 'Show Button Controls'}
-            </Button>
-          )}
-        </div>
+  const controlsInfo = (
+    <div>
+      <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Controls</h3>
+      <div className="space-y-2">
+        {isMobile ? (
+          <>
+            <ControlItem keys={['Tap', 'Swipe ↑']} action="Rotate" />
+            <ControlItem keys={['Swipe ←']} action="Move Left" />
+            <ControlItem keys={['Swipe →']} action="Move Right" />
+            <ControlItem keys={['Swipe ↓']} action="Soft Drop" />
+            <ControlItem keys={['Double Tap']} action="Hard Drop" />
+          </>
+        ) : (
+          <>
+            <ControlItem keys={['←', '→', 'A', 'D']} action="Move" />
+            <ControlItem keys={['↑', 'W']} action="Rotate" />
+            <ControlItem keys={['↓', 'S']} action="Soft Drop" />
+            <ControlItem keys={['Space']} action="Hard Drop" />
+            <ControlItem keys={['P']} action="Pause" />
+          </>
+        )}
       </div>
+      {isAiEnabled && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          <span className="text-xs text-green-400 font-medium">AI Active</span>
+        </div>
+      )}
+    </div>
+  )
+
+  const sidePanel = (
+    <div>
+      <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3 text-center">
+        Next Piece
+      </h3>
+      <div className="flex justify-center p-2 bg-neutral-950 rounded-lg">
+        <div style={nextPieceContainerStyle}>{renderNextPiece()}</div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div ref={containerRef} className="w-full">
+      <GameShell
+        stats={stats}
+        gameArea={
+          <div
+            className="relative"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            style={boardContainerStyle}
+          >
+            {renderBoard()}
+          </div>
+        }
+        sidePanel={sidePanel}
+        controlsInfo={controlsInfo}
+        mobileControls={
+          <MobileControls
+            onUp={() => playerRotate(board, 1)}
+            onDown={dropPlayer}
+            onLeft={() => movePlayer(-1)}
+            onRight={() => movePlayer(1)}
+            onPrimary={hardDrop}
+            primaryLabel="Hard Drop"
+          />
+        }
+        gameState={gameState}
+        difficulty={difficulty}
+        onDifficultySelect={selectDifficulty}
+        controls={{
+          onPause: pauseGame,
+          onResume: resumeGame,
+          onReset: resetToIdle,
+          onToggleAI: toggleAi,
+          isPaused,
+          isAIEnabled: isAiEnabled,
+          supportsAI: true
+        }}
+        startOverlay={{
+          title: 'Select Difficulty',
+          description: 'Choose a pace before you start.',
+          primaryActionLabel: 'Start',
+          onPrimaryAction: () => startNewGame(difficulty)
+        }}
+        pauseOverlay={{
+          title: 'Paused',
+          description: 'Ready to keep stacking?',
+          primaryActionLabel: 'Resume',
+          onPrimaryAction: resumeGame
+        }}
+        gameOverOverlay={{
+          title: 'Game Over',
+          description: `Final Score: ${score}`,
+          primaryActionLabel: 'Play Again',
+          onPrimaryAction: () => startNewGame(difficulty),
+          secondaryActionLabel: 'Back',
+          onSecondaryAction: resetToIdle
+        }}
+      />
     </div>
   )
 }
 
-export default TetrisGame 
+export default TetrisGame
