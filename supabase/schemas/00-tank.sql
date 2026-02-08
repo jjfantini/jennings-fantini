@@ -57,3 +57,15 @@ on public.tank_games
 for update
 using (true)
 with check (true);
+
+-- Realtime: broadcast row changes so the other player sees status/state updates
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'tank_games'
+  ) then
+    alter publication supabase_realtime add table public.tank_games;
+  end if;
+end
+$$;

@@ -355,7 +355,7 @@ export const useTankMultiplayer = () => {
     if (lastAction.type === 'fire' && lastAction.player !== playerNumber) {
       return 'Opponent fired. Waiting for your turn...'
     }
-    return 'Waiting for opponent...'
+    return "Opponent's turn."
   }, [game, playerNumber])
 
   const opponentAim = useMemo(() => {
