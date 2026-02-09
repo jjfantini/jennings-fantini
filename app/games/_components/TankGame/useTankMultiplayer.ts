@@ -64,7 +64,7 @@ const generateRoomCode = () => {
 
 const buildInitialTankState = (terrain: ReturnType<typeof createTerrain>, side: 'left' | 'right'): TankState => {
   const x = side === 'left' ? terrain.width * 0.2 : terrain.width * 0.8
-  const position = getTankRestingPosition(terrain, x, TANK_GAME_CONFIG.tankSize.height)
+  const position = getTankRestingPosition(terrain, x, TANK_GAME_CONFIG.tankSize)
   return {
     position,
     angle: side === 'left' ? 45 : 135,

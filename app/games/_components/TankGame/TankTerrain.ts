@@ -63,6 +63,12 @@ export const getTerrainY = (terrain: TerrainMap, x: number) => {
   return left + (right - left) * t
 }
 
+export const getTerrainAngle = (terrain: TerrainMap, x: number) => {
+  const left = getTerrainY(terrain, x - terrain.step)
+  const right = getTerrainY(terrain, x + terrain.step)
+  return Math.atan2(right - left, terrain.step * 2)
+}
+
 export const applyCrater = (terrain: TerrainMap, center: TankVector, radius: number): TerrainMap => {
   const updated = [...terrain.heights]
   const startX = Math.max(0, center.x - radius)
@@ -89,12 +95,17 @@ export const applyCrater = (terrain: TerrainMap, center: TankVector, radius: num
 export const getTankRestingPosition = (
   terrain: TerrainMap,
   x: number,
-  tankHeight: number
+  tankSize: { width: number; height: number }
 ): TankVector => {
   const groundY = getTerrainY(terrain, x)
+  const angle = getTerrainAngle(terrain, x)
+  const halfHeight = tankSize.height / 2
+  const halfWidth = tankSize.width / 2
+  const verticalExtent =
+    halfHeight * Math.abs(Math.cos(angle)) + halfWidth * Math.abs(Math.sin(angle))
   return {
     x,
-    y: groundY - tankHeight / 2
+    y: groundY - verticalExtent
   }
 }
 

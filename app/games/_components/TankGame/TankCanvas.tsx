@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { BlueTank, RedTank } from '@/app/games/_components/TankGame/TankAssets'
-import { buildTerrainPath } from '@/app/games/_components/TankGame/TankTerrain'
+import { buildTerrainPath, getTerrainAngle } from '@/app/games/_components/TankGame/TankTerrain'
+import { getTankAimOrigin } from '@/app/games/_components/TankGame/TankPhysics'
 import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
 import { TANK_GAME_CONFIG } from '@/app/games/_components/TankGame/tank.config'
 
@@ -20,25 +21,18 @@ type ShotAnimation = {
   path: TankVector[]
   impact: TankVector | null
   startTime: number
+  terrainSnapshot: TerrainMap
 }
 
 const getAimLine = (tank: TankState, power: number) => {
   const angle = (tank.angle * Math.PI) / 180
-  const origin = {
-    x: tank.position.x + Math.cos(angle) * 30,
-    y: tank.position.y - Math.sin(angle) * 24
+  const origin = getTankAimOrigin(tank, TANK_GAME_CONFIG.tankSize)
+  const length = Math.max(12, power * 1.1)
+  const endpoint = {
+    x: origin.x + Math.cos(angle) * length,
+    y: origin.y - Math.sin(angle) * length
   }
-  const points: TankVector[] = []
-  for (let t = 0; t <= 1; t += 0.1) {
-    const time = t * 0.9
-    const velocityX = Math.cos(angle) * power * TANK_GAME_CONFIG.powerScale * 60
-    const velocityY = -Math.sin(angle) * power * TANK_GAME_CONFIG.powerScale * 60
-    points.push({
-      x: origin.x + velocityX * time,
-      y: origin.y + velocityY * time + 0.5 * TANK_GAME_CONFIG.gravity * (time * 60) * (time * 60)
-    })
-  }
-  return points
+  return [origin, endpoint]
 }
 
 export const TankCanvas = ({
@@ -55,8 +49,12 @@ export const TankCanvas = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const animationRef = useRef<number | null>(null)
   const shotRef = useRef<ShotAnimation | null>(null)
-
-  const terrainPath = useMemo(() => buildTerrainPath(terrain), [terrain])
+  const previousTerrainRef = useRef<TerrainMap>(terrain)
+  const tankSpriteSize = { width: 64, height: 48 }
+  const tank1BodyAngle = getTerrainAngle(terrain, tank1.position.x)
+  const tank2BodyAngle = getTerrainAngle(terrain, tank2.position.x)
+  const tank1TurretAngle = tank1.angle - (tank1BodyAngle * 180) / Math.PI
+  const tank2TurretAngle = tank2.angle - (tank2BodyAngle * 180) / Math.PI
 
   useEffect(() => {
     if (!shot?.path?.length) {
@@ -65,9 +63,14 @@ export const TankCanvas = ({
     shotRef.current = {
       path: shot.path,
       impact: shot.impact,
-      startTime: performance.now()
+      startTime: performance.now(),
+      terrainSnapshot: previousTerrainRef.current
     }
   }, [shot])
+
+  useEffect(() => {
+    previousTerrainRef.current = terrain
+  }, [terrain])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -80,6 +83,9 @@ export const TankCanvas = ({
     }
 
     const render = () => {
+      const activeTerrain = shotRef.current?.terrainSnapshot ?? terrain
+      const terrainPath = buildTerrainPath(activeTerrain)
+
       ctx.clearRect(0, 0, width, height)
 
       const gradient = ctx.createLinearGradient(0, 0, 0, height)
@@ -159,12 +165,18 @@ export const TankCanvas = ({
 
         if (progress >= 1 && shotAnimation.impact) {
           const explosionProgress = Math.min(1, (elapsed - duration) / 400)
+          if (explosionProgress < 0.3) {
+            ctx.fillStyle = '#fbbf24'
+            ctx.beginPath()
+            ctx.arc(shotAnimation.impact.x, shotAnimation.impact.y, 4, 0, Math.PI * 2)
+            ctx.fill()
+          }
           ctx.fillStyle = `rgba(248, 113, 113, ${1 - explosionProgress})`
           ctx.beginPath()
           ctx.arc(
             shotAnimation.impact.x,
             shotAnimation.impact.y,
-            TANK_GAME_CONFIG.explosionRadius * (0.6 + explosionProgress * 0.4),
+            TANK_GAME_CONFIG.explosionRadius * explosionProgress,
             0,
             Math.PI * 2
           )
@@ -186,7 +198,7 @@ export const TankCanvas = ({
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [height, localAim, opponentAim, terrainPath, width, tank1, tank2, localPlayer])
+  }, [height, localAim, opponentAim, width, tank1, tank2, localPlayer, terrain])
 
   return (
     <div className="relative" style={{ width, height }}>
@@ -196,20 +208,24 @@ export const TankCanvas = ({
         <div
           className="absolute"
           style={{
-            left: tank1.position.x - 32,
-            top: tank1.position.y - 32
+            left: tank1.position.x - tankSpriteSize.width / 2,
+            top: tank1.position.y - tankSpriteSize.height / 2,
+            transform: `rotate(${tank1BodyAngle}rad)`,
+            transformOrigin: '50% 100%'
           }}
         >
-          <BlueTank turretAngle={tank1.angle} />
+          <BlueTank turretAngle={tank1TurretAngle} />
         </div>
         <div
           className="absolute"
           style={{
-            left: tank2.position.x - 32,
-            top: tank2.position.y - 32
+            left: tank2.position.x - tankSpriteSize.width / 2,
+            top: tank2.position.y - tankSpriteSize.height / 2,
+            transform: `rotate(${tank2BodyAngle}rad)`,
+            transformOrigin: '50% 100%'
           }}
         >
-          <RedTank turretAngle={tank2.angle} />
+          <RedTank turretAngle={tank2TurretAngle} />
         </div>
       </div>
     </div>

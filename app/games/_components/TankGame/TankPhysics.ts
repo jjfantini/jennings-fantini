@@ -119,7 +119,7 @@ export const simulateShot = ({
 
     const terrainHits = Matter.Query.collides(projectile, terrainBodies)
     if (terrainHits.length > 0) {
-      impact = { x: projectile.position.x, y: projectile.position.y }
+      impact = { x: projectile.position.x, y: getTerrainY(terrain, projectile.position.x) }
       break
     }
   }
@@ -132,11 +132,11 @@ export const simulateShot = ({
 
   const updatedTank1 = {
     ...tank1,
-    position: getTankRestingPosition(updatedTerrain, tank1.position.x, config.tankSize.height)
+    position: getTankRestingPosition(updatedTerrain, tank1.position.x, config.tankSize)
   }
   const updatedTank2 = {
     ...tank2,
-    position: getTankRestingPosition(updatedTerrain, tank2.position.x, config.tankSize.height)
+    position: getTankRestingPosition(updatedTerrain, tank2.position.x, config.tankSize)
   }
 
   const distanceToTank1 = Math.hypot(updatedTank1.position.x - impact.x, updatedTank1.position.y - impact.y)
@@ -186,8 +186,3 @@ export const getAimPreviewPoint = (
   return { x, y }
 }
 
-export const getTerrainAngle = (terrain: TerrainMap, x: number) => {
-  const left = getTerrainY(terrain, x - terrain.step)
-  const right = getTerrainY(terrain, x + terrain.step)
-  return Math.atan2(left - right, terrain.step * 2)
-}
