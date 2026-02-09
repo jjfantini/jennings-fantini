@@ -113,8 +113,19 @@ export const useTankMultiplayer = () => {
             lastFireRef.current = lastAction.updated_at
           }
 
-          previousGameRef.current = updatedGame
-          setGame(updatedGame)
+          const mergedGame = previousGame
+            ? {
+                ...previousGame,
+                ...updatedGame,
+                terrain: updatedGame.terrain ?? previousGame.terrain,
+                tank1_position: updatedGame.tank1_position ?? previousGame.tank1_position,
+                tank2_position: updatedGame.tank2_position ?? previousGame.tank2_position,
+                last_action: updatedGame.last_action ?? previousGame.last_action
+              }
+            : updatedGame
+
+          previousGameRef.current = mergedGame
+          setGame(mergedGame)
         }
       )
       .subscribe()

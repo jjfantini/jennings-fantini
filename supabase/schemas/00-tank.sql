@@ -22,6 +22,8 @@ create table if not exists public.tank_games (
   updated_at timestamp with time zone not null default now()
 );
 
+alter table public.tank_games replica identity full;
+
 create index if not exists tank_games_room_code_idx on public.tank_games (room_code);
 create index if not exists tank_games_status_idx on public.tank_games (status);
 

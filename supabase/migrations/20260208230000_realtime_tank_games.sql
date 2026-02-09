@@ -1,3 +1,6 @@
+-- Ensure full row data is emitted for Realtime updates.
+alter table public.tank_games replica identity full;
+
 -- Add tank_games to Realtime publication so clients receive row updates (e.g. when P2 joins, P1 sees status change)
 do $$
 begin
