@@ -19,6 +19,7 @@ const TankGame = () => {
     statusMessage,
     opponentAim,
     createGame,
+    startRematch,
     joinGame,
     updateAim,
     fire,
@@ -135,7 +136,7 @@ const TankGame = () => {
             <button
               type="button"
               onClick={async () => {
-                await createGame()
+                await startRematch()
               }}
               className="rounded-lg border border-neutral-800 px-4 py-2 text-sm text-neutral-200 hover:border-neutral-600"
             >

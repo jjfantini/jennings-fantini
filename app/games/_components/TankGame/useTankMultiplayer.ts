@@ -24,6 +24,22 @@ const createPlayerId = () => {
   return `local-${Math.random().toString(16).slice(2)}-${Date.now().toString(16)}`
 }
 
+const createGameId = () => {
+  const cryptoRef = globalThis.crypto
+  if (cryptoRef?.randomUUID) {
+    return cryptoRef.randomUUID()
+  }
+  if (cryptoRef?.getRandomValues) {
+    const bytes = new Uint8Array(16)
+    cryptoRef.getRandomValues(bytes)
+    bytes[6] = (bytes[6] & 0x0f) | 0x40
+    bytes[8] = (bytes[8] & 0x3f) | 0x80
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+  return `game-${Math.random().toString(16).slice(2)}-${Date.now().toString(16)}`
+}
+
 const getOrCreatePlayerId = () => {
   if (typeof window === 'undefined') {
     return ''
@@ -65,6 +81,7 @@ export const useTankMultiplayer = () => {
 
   const previousGameRef = useRef<TankGameRow | null>(null)
   const lastFireRef = useRef<string | null>(null)
+  const rematchSwitchRef = useRef<string | null>(null)
 
   useEffect(() => {
     setPlayerId(getOrCreatePlayerId())
@@ -126,6 +143,39 @@ export const useTankMultiplayer = () => {
 
           previousGameRef.current = mergedGame
           setGame(mergedGame)
+
+          if (
+            updatedGame.id === game.id &&
+            updatedGame.status === 'finished' &&
+            updatedGame.rematch_game_id &&
+            updatedGame.rematch_game_id !== rematchSwitchRef.current
+          ) {
+            rematchSwitchRef.current = updatedGame.rematch_game_id
+            void (async () => {
+              const { data: rematchGame, error: rematchError } = await supabase
+                .from('tank_games')
+                .select('*')
+                .eq('id', updatedGame.rematch_game_id)
+                .single()
+
+              if (rematchError || !rematchGame) {
+                setError(rematchError?.message ?? 'Failed to load rematch.')
+                rematchSwitchRef.current = null
+                return
+              }
+
+              const resolvedPlayerId = getOrCreatePlayerId()
+              setPlayerId(resolvedPlayerId)
+              const nextGame = rematchGame as TankGameRow
+              previousGameRef.current = nextGame
+              setGame(nextGame)
+              setShot(null)
+              const nextPlayerNumber =
+                nextGame.player1_id === resolvedPlayerId ? 1 : nextGame.player2_id === resolvedPlayerId ? 2 : null
+              setPlayerNumber(nextPlayerNumber)
+              window.localStorage.setItem(LAST_ROOM_KEY, nextGame.room_code)
+            })()
+          }
         }
       )
       .subscribe()
@@ -187,6 +237,143 @@ export const useTankMultiplayer = () => {
     setError('Failed to create a unique room code. Please try again.')
     return null
   }, [])
+
+  const startRematch = useCallback(async () => {
+    if (!game || game.status !== 'finished') {
+      return null
+    }
+
+    if (!game.player2_id) {
+      setError('Opponent has not joined yet.')
+      return null
+    }
+
+    setError(null)
+    const resolvedPlayerId = getOrCreatePlayerId()
+    setPlayerId(resolvedPlayerId)
+
+    if (game.rematch_game_id) {
+      const { data: rematchGame, error: rematchError } = await supabase
+        .from('tank_games')
+        .select('*')
+        .eq('id', game.rematch_game_id)
+        .single()
+
+      if (rematchError || !rematchGame) {
+        setError(rematchError?.message ?? 'Failed to load rematch.')
+        return null
+      }
+
+      const nextGame = rematchGame as TankGameRow
+      previousGameRef.current = nextGame
+      setGame(nextGame)
+      setShot(null)
+      const nextPlayerNumber =
+        nextGame.player1_id === resolvedPlayerId ? 1 : nextGame.player2_id === resolvedPlayerId ? 2 : null
+      setPlayerNumber(nextPlayerNumber)
+      window.localStorage.setItem(LAST_ROOM_KEY, nextGame.room_code)
+      return nextGame
+    }
+
+    const rematchId = createGameId()
+    rematchSwitchRef.current = rematchId
+
+    const { data: claimedGame, error: claimError } = await supabase
+      .from('tank_games')
+      .update({ rematch_game_id: rematchId })
+      .eq('id', game.id)
+      .is('rematch_game_id', null)
+      .select()
+      .single()
+
+    if (claimError) {
+      setError(claimError.message)
+      rematchSwitchRef.current = null
+      return null
+    }
+
+    if (!claimedGame) {
+      const { data: latestGame } = await supabase.from('tank_games').select('rematch_game_id').eq('id', game.id).single()
+      if (latestGame?.rematch_game_id) {
+        const { data: rematchGame } = await supabase
+          .from('tank_games')
+          .select('*')
+          .eq('id', latestGame.rematch_game_id)
+          .single()
+        if (rematchGame) {
+          const nextGame = rematchGame as TankGameRow
+          previousGameRef.current = nextGame
+          setGame(nextGame)
+          setShot(null)
+          const nextPlayerNumber =
+            nextGame.player1_id === resolvedPlayerId ? 1 : nextGame.player2_id === resolvedPlayerId ? 2 : null
+          setPlayerNumber(nextPlayerNumber)
+          window.localStorage.setItem(LAST_ROOM_KEY, nextGame.room_code)
+          return nextGame
+        }
+      }
+      setError('Rematch already started.')
+      rematchSwitchRef.current = null
+      return null
+    }
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const roomCode = generateRoomCode()
+      const terrain = createTerrain({
+        width: TANK_GAME_CONFIG.canvasWidth,
+        height: TANK_GAME_CONFIG.canvasHeight,
+        step: TANK_GAME_CONFIG.terrainStep,
+        seed: roomCode
+      })
+      const tank1 = buildInitialTankState(terrain, 'left')
+      const tank2 = buildInitialTankState(terrain, 'right')
+
+      const { data: newGame, error: insertError } = await supabase
+        .from('tank_games')
+        .insert({
+          id: rematchId,
+          room_code: roomCode,
+          player1_id: game.player1_id,
+          player2_id: game.player2_id,
+          status: 'playing',
+          current_turn: 1,
+          player1_lives: 3,
+          player2_lives: 3,
+          terrain,
+          tank1_position: tank1,
+          tank2_position: tank2,
+          last_action: { type: 'none' },
+          winner: null
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        if (insertError.message.toLowerCase().includes('duplicate')) {
+          continue
+        }
+        await supabase.from('tank_games').update({ rematch_game_id: null }).eq('id', game.id).eq('rematch_game_id', rematchId)
+        setError(insertError.message)
+        rematchSwitchRef.current = null
+        return null
+      }
+
+      const nextGame = newGame as TankGameRow
+      previousGameRef.current = nextGame
+      setGame(nextGame)
+      setShot(null)
+      const nextPlayerNumber =
+        nextGame.player1_id === resolvedPlayerId ? 1 : nextGame.player2_id === resolvedPlayerId ? 2 : null
+      setPlayerNumber(nextPlayerNumber)
+      window.localStorage.setItem(LAST_ROOM_KEY, nextGame.room_code)
+      return nextGame
+    }
+
+    await supabase.from('tank_games').update({ rematch_game_id: null }).eq('id', game.id).eq('rematch_game_id', rematchId)
+    setError('Failed to create a unique room code. Please try again.')
+    rematchSwitchRef.current = null
+    return null
+  }, [game])
 
   const joinGame = useCallback(async (roomCode: string) => {
     setError(null)
@@ -392,6 +579,7 @@ export const useTankMultiplayer = () => {
     statusMessage,
     opponentAim,
     createGame,
+    startRematch,
     joinGame,
     updateAim,
     fire,

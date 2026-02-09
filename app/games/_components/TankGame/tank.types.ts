@@ -23,6 +23,7 @@ export type TankGameRow = {
   room_code: string
   player1_id: string
   player2_id: string | null
+  rematch_game_id?: string | null
   status: TankGameStatus
   current_turn: 1 | 2
   player1_lives: number
