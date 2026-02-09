@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { BlueTank, RedTank } from '@/app/games/_components/TankGame/TankAssets'
 import { buildTerrainPath, getTerrainAngle } from '@/app/games/_components/TankGame/TankTerrain'
 import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
@@ -21,6 +21,12 @@ type ShotAnimation = {
   impact: TankVector | null
   startTime: number
   terrainSnapshot: TerrainMap
+  updatedTerrain: TerrainMap
+  tank1Snapshot: TankState
+  tank2Snapshot: TankState
+  updatedTank1: TankState
+  updatedTank2: TankState
+  fallsTriggered: boolean
 }
 
 const tankSprite = {
@@ -94,26 +100,59 @@ export const TankCanvas = ({
   const animationRef = useRef<number | null>(null)
   const shotRef = useRef<ShotAnimation | null>(null)
   const previousTerrainRef = useRef<TerrainMap>(terrain)
-  const tank1BodyAngle = getTerrainAngle(terrain, tank1.position.x)
-  const tank2BodyAngle = getTerrainAngle(terrain, tank2.position.x)
-  const tank1TurretAngle = getTurretRotationDeg(tank1.angle, tank1BodyAngle)
-  const tank2TurretAngle = getTurretRotationDeg(tank2.angle, tank2BodyAngle)
+  const tankSnapshotRef = useRef<{ tank1: TankState; tank2: TankState }>({ tank1, tank2 })
+  const [visualTerrain, setVisualTerrain] = useState<TerrainMap>(terrain)
+  const [visualTank1, setVisualTank1] = useState<TankState>(tank1)
+  const [visualTank2, setVisualTank2] = useState<TankState>(tank2)
+  const [tankFallDurations, setTankFallDurations] = useState<{ tank1: number; tank2: number }>({
+    tank1: 0,
+    tank2: 0
+  })
+  const tank1BodyAngle = getTerrainAngle(visualTerrain, visualTank1.position.x)
+  const tank2BodyAngle = getTerrainAngle(visualTerrain, visualTank2.position.x)
+  const tank1TurretAngle = getTurretRotationDeg(visualTank1.angle, tank1BodyAngle)
+  const tank2TurretAngle = getTurretRotationDeg(visualTank2.angle, tank2BodyAngle)
 
   useEffect(() => {
     if (!shot?.path?.length) {
       return
     }
+    const { tank1: tank1Snapshot, tank2: tank2Snapshot } = tankSnapshotRef.current
     shotRef.current = {
       path: shot.path,
       impact: shot.impact,
       startTime: performance.now(),
-      terrainSnapshot: previousTerrainRef.current
+      terrainSnapshot: previousTerrainRef.current,
+      updatedTerrain: shot.updatedTerrain,
+      tank1Snapshot,
+      tank2Snapshot,
+      updatedTank1: shot.updatedTank1,
+      updatedTank2: shot.updatedTank2,
+      fallsTriggered: false
     }
+    setVisualTerrain(previousTerrainRef.current)
+    setVisualTank1(tank1Snapshot)
+    setVisualTank2(tank2Snapshot)
+    setTankFallDurations({ tank1: 0, tank2: 0 })
   }, [shot])
 
   useEffect(() => {
     previousTerrainRef.current = terrain
   }, [terrain])
+
+  useEffect(() => {
+    tankSnapshotRef.current = { tank1, tank2 }
+  }, [tank1, tank2])
+
+  useEffect(() => {
+    if (shotRef.current) {
+      return
+    }
+    setVisualTerrain(terrain)
+    setVisualTank1(tank1)
+    setVisualTank2(tank2)
+    setTankFallDurations({ tank1: 0, tank2: 0 })
+  }, [terrain, tank1, tank2])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -126,7 +165,15 @@ export const TankCanvas = ({
     }
 
     const render = () => {
-      const activeTerrain = shotRef.current?.terrainSnapshot ?? terrain
+      const shotAnimation = shotRef.current
+      const elapsed = shotAnimation ? performance.now() - shotAnimation.startTime : 0
+      const duration = shotAnimation ? Math.max(800, shotAnimation.path.length * 8) : 0
+      const progress = shotAnimation ? Math.min(1, elapsed / duration) : 0
+      const activeTerrain = shotAnimation
+        ? progress >= 1
+          ? shotAnimation.updatedTerrain
+          : shotAnimation.terrainSnapshot
+        : terrain
       const terrainPath = buildTerrainPath(activeTerrain)
 
       ctx.clearRect(0, 0, width, height)
@@ -152,7 +199,7 @@ export const TankCanvas = ({
       ctx.stroke()
 
       if (localAim && localPlayer) {
-        const activeTank = localPlayer === 1 ? tank1 : tank2
+        const activeTank = localPlayer === 1 ? visualTank1 : visualTank2
         const activeBodyAngle = localPlayer === 1 ? tank1BodyAngle : tank2BodyAngle
         const points = getAimLine(
           { ...activeTank, angle: localAim.angle, power: localAim.power },
@@ -175,7 +222,7 @@ export const TankCanvas = ({
       }
 
       if (opponentAim && localPlayer) {
-        const opponentTank = localPlayer === 1 ? tank2 : tank1
+        const opponentTank = localPlayer === 1 ? visualTank2 : visualTank1
         const opponentBodyAngle = localPlayer === 1 ? tank2BodyAngle : tank1BodyAngle
         const points = getAimLine(
           { ...opponentTank, angle: opponentAim.angle, power: opponentAim.power },
@@ -197,15 +244,11 @@ export const TankCanvas = ({
         ctx.setLineDash([])
       }
 
-      const shotAnimation = shotRef.current
       if (shotAnimation) {
-        const elapsed = performance.now() - shotAnimation.startTime
-        const duration = Math.max(800, shotAnimation.path.length * 8)
-        const progress = Math.min(1, elapsed / duration)
         const index = Math.floor(progress * (shotAnimation.path.length - 1))
         const currentPoint = shotAnimation.path[index]
 
-        if (currentPoint) {
+        if (currentPoint && progress < 1) {
           ctx.fillStyle = '#fbbf24'
           ctx.beginPath()
           ctx.arc(currentPoint.x, currentPoint.y, 4, 0, Math.PI * 2)
@@ -232,8 +275,27 @@ export const TankCanvas = ({
           ctx.fill()
         }
 
+        if (progress >= 1 && !shotAnimation.fallsTriggered) {
+          shotAnimation.fallsTriggered = true
+          const tank1Distance = shotAnimation.updatedTank1.position.y - shotAnimation.tank1Snapshot.position.y
+          const tank2Distance = shotAnimation.updatedTank2.position.y - shotAnimation.tank2Snapshot.position.y
+          const tank1Duration =
+            tank1Distance > 2 ? Math.min(800, Math.max(180, Math.sqrt(tank1Distance) * 30)) : 0
+          const tank2Duration =
+            tank2Distance > 2 ? Math.min(800, Math.max(180, Math.sqrt(tank2Distance) * 30)) : 0
+
+          setVisualTerrain(shotAnimation.updatedTerrain)
+          setVisualTank1(shotAnimation.updatedTank1)
+          setVisualTank2(shotAnimation.updatedTank2)
+          setTankFallDurations({ tank1: tank1Duration, tank2: tank2Duration })
+        }
+
         if (progress >= 1.2) {
           shotRef.current = null
+          setVisualTerrain(terrain)
+          setVisualTank1(tank1)
+          setVisualTank2(tank2)
+          setTankFallDurations({ tank1: 0, tank2: 0 })
         }
       }
 
@@ -257,10 +319,14 @@ export const TankCanvas = ({
         <div
           className="absolute"
           style={{
-            left: tank1.position.x - tankSprite.width / 2,
-            top: tank1.position.y - tankSprite.height / 2,
+            left: visualTank1.position.x - tankSprite.width / 2,
+            top: visualTank1.position.y - tankSprite.height / 2,
             transform: `rotate(${tank1BodyAngle}rad)`,
-            transformOrigin: '50% 100%'
+            transformOrigin: '50% 100%',
+            transition:
+              tankFallDurations.tank1 > 0
+                ? `top ${tankFallDurations.tank1}ms cubic-bezier(0.2, 0, 0.6, 1), transform 180ms linear`
+                : 'none'
           }}
         >
           <BlueTank turretAngle={tank1TurretAngle} />
@@ -268,10 +334,14 @@ export const TankCanvas = ({
         <div
           className="absolute"
           style={{
-            left: tank2.position.x - tankSprite.width / 2,
-            top: tank2.position.y - tankSprite.height / 2,
+            left: visualTank2.position.x - tankSprite.width / 2,
+            top: visualTank2.position.y - tankSprite.height / 2,
             transform: `rotate(${tank2BodyAngle}rad)`,
-            transformOrigin: '50% 100%'
+            transformOrigin: '50% 100%',
+            transition:
+              tankFallDurations.tank2 > 0
+                ? `top ${tankFallDurations.tank2}ms cubic-bezier(0.2, 0, 0.6, 1), transform 180ms linear`
+                : 'none'
           }}
         >
           <RedTank turretAngle={tank2TurretAngle} />
