@@ -5,7 +5,7 @@ type TankSpriteProps = {
 }
 
 const turretStyle = (angle: number) => ({
-  transform: `rotate(${-angle}deg)`,
+  transform: `rotate(${angle}deg)`,
   transformOrigin: '24px 24px'
 })
 

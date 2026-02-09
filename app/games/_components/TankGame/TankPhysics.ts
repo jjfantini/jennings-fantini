@@ -1,6 +1,11 @@
 import Matter from 'matter-js'
 import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
-import { applyCrater, getTankRestingPosition, getTerrainY } from '@/app/games/_components/TankGame/TankTerrain'
+import {
+  applyCrater,
+  getTankRestingPosition,
+  getTerrainAngle,
+  getTerrainY
+} from '@/app/games/_components/TankGame/TankTerrain'
 
 type SimulationConfig = {
   gravity: number
@@ -44,6 +49,45 @@ const buildTerrainBodies = (terrain: TerrainMap) => {
 
 const toRadians = (deg: number) => (deg * Math.PI) / 180
 
+const tankSprite = {
+  width: 64,
+  height: 48,
+  bodyPivot: { x: 32, y: 48 },
+  turretPivot: { x: 24, y: 24 },
+  turretMuzzle: { x: 52, y: 23 }
+}
+
+const rotateVector = (vector: TankVector, angleRad: number) => {
+  const cos = Math.cos(angleRad)
+  const sin = Math.sin(angleRad)
+  return {
+    x: vector.x * cos - vector.y * sin,
+    y: vector.x * sin + vector.y * cos
+  }
+}
+
+const rotatePointAround = (point: TankVector, origin: TankVector, angleRad: number) => {
+  const offset = { x: point.x - origin.x, y: point.y - origin.y }
+  const rotated = rotateVector(offset, angleRad)
+  return { x: origin.x + rotated.x, y: origin.y + rotated.y }
+}
+
+const getTurretRotationRad = (aimAngleDeg: number, bodyAngleRad: number) => {
+  const screenAimRad = -toRadians(aimAngleDeg)
+  return screenAimRad - bodyAngleRad
+}
+
+const getTankMuzzlePosition = (tank: TankState, aimAngleDeg: number, bodyAngleRad: number) => {
+  const turretRotationRad = getTurretRotationRad(aimAngleDeg, bodyAngleRad)
+  const topLeft = {
+    x: tank.position.x - tankSprite.width / 2,
+    y: tank.position.y - tankSprite.height / 2
+  }
+  const muzzleAfterTurret = rotatePointAround(tankSprite.turretMuzzle, tankSprite.turretPivot, turretRotationRad)
+  const muzzleAfterBody = rotatePointAround(muzzleAfterTurret, tankSprite.bodyPivot, bodyAngleRad)
+  return { x: topLeft.x + muzzleAfterBody.x, y: topLeft.y + muzzleAfterBody.y }
+}
+
 export const simulateShot = ({
   terrain,
   tank1,
@@ -76,9 +120,11 @@ export const simulateShot = ({
   )
 
   const firingTank = firingPlayer === 1 ? tank1 : tank2
+  const bodyAngleRad = getTerrainAngle(terrain, firingTank.position.x)
+  const muzzle = getTankMuzzlePosition(firingTank, angleDeg, bodyAngleRad)
   const angle = toRadians(angleDeg)
-  const launchX = firingTank.position.x + Math.cos(angle) * (config.tankSize.width / 2 + 6)
-  const launchY = firingTank.position.y - Math.sin(angle) * (config.tankSize.height / 2 + 4)
+  const launchX = muzzle.x
+  const launchY = muzzle.y
 
   const projectile = Matter.Bodies.circle(launchX, launchY, config.projectileRadius, {
     restitution: 0.2,

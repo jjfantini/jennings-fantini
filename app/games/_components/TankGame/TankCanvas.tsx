@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { BlueTank, RedTank } from '@/app/games/_components/TankGame/TankAssets'
 import { buildTerrainPath, getTerrainAngle } from '@/app/games/_components/TankGame/TankTerrain'
-import { getTankAimOrigin } from '@/app/games/_components/TankGame/TankPhysics'
 import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
 import { TANK_GAME_CONFIG } from '@/app/games/_components/TankGame/tank.config'
 
@@ -24,15 +23,60 @@ type ShotAnimation = {
   terrainSnapshot: TerrainMap
 }
 
-const getAimLine = (tank: TankState, power: number) => {
-  const angle = (tank.angle * Math.PI) / 180
-  const origin = getTankAimOrigin(tank, TANK_GAME_CONFIG.tankSize)
+const tankSprite = {
+  width: 64,
+  height: 48,
+  bodyPivot: { x: 32, y: 48 },
+  turretPivot: { x: 24, y: 24 },
+  turretMuzzle: { x: 52, y: 23 }
+}
+
+const degreesToRadians = (deg: number) => (deg * Math.PI) / 180
+const radiansToDegrees = (rad: number) => (rad * 180) / Math.PI
+
+const rotateVector = (vector: TankVector, angleRad: number) => {
+  const cos = Math.cos(angleRad)
+  const sin = Math.sin(angleRad)
+  return {
+    x: vector.x * cos - vector.y * sin,
+    y: vector.x * sin + vector.y * cos
+  }
+}
+
+const rotatePointAround = (point: TankVector, origin: TankVector, angleRad: number) => {
+  const offset = { x: point.x - origin.x, y: point.y - origin.y }
+  const rotated = rotateVector(offset, angleRad)
+  return { x: origin.x + rotated.x, y: origin.y + rotated.y }
+}
+
+const getTurretRotationDeg = (aimAngleDeg: number, bodyAngleRad: number) => {
+  const screenAimRad = -degreesToRadians(aimAngleDeg)
+  return radiansToDegrees(screenAimRad - bodyAngleRad)
+}
+
+const getAimLine = (tank: TankState, aimAngleDeg: number, power: number, bodyAngleRad: number) => {
+  const turretRotationRad = degreesToRadians(getTurretRotationDeg(aimAngleDeg, bodyAngleRad))
+  const topLeft = {
+    x: tank.position.x - tankSprite.width / 2,
+    y: tank.position.y - tankSprite.height / 2
+  }
+  const muzzleAfterTurret = rotatePointAround(tankSprite.turretMuzzle, tankSprite.turretPivot, turretRotationRad)
+  const muzzleAfterBody = rotatePointAround(muzzleAfterTurret, tankSprite.bodyPivot, bodyAngleRad)
+  const muzzleWorld = { x: topLeft.x + muzzleAfterBody.x, y: topLeft.y + muzzleAfterBody.y }
+  const barrelVector = {
+    x: tankSprite.turretMuzzle.x - tankSprite.turretPivot.x,
+    y: tankSprite.turretMuzzle.y - tankSprite.turretPivot.y
+  }
+  const barrelAfterTurret = rotateVector(barrelVector, turretRotationRad)
+  const barrelAfterBody = rotateVector(barrelAfterTurret, bodyAngleRad)
+  const barrelLength = Math.hypot(barrelAfterBody.x, barrelAfterBody.y) || 1
+  const direction = { x: barrelAfterBody.x / barrelLength, y: barrelAfterBody.y / barrelLength }
   const length = Math.max(12, power * 1.1)
   const endpoint = {
-    x: origin.x + Math.cos(angle) * length,
-    y: origin.y - Math.sin(angle) * length
+    x: muzzleWorld.x + direction.x * length,
+    y: muzzleWorld.y + direction.y * length
   }
-  return [origin, endpoint]
+  return [muzzleWorld, endpoint]
 }
 
 export const TankCanvas = ({
@@ -50,11 +94,10 @@ export const TankCanvas = ({
   const animationRef = useRef<number | null>(null)
   const shotRef = useRef<ShotAnimation | null>(null)
   const previousTerrainRef = useRef<TerrainMap>(terrain)
-  const tankSpriteSize = { width: 64, height: 48 }
   const tank1BodyAngle = getTerrainAngle(terrain, tank1.position.x)
   const tank2BodyAngle = getTerrainAngle(terrain, tank2.position.x)
-  const tank1TurretAngle = tank1.angle - (tank1BodyAngle * 180) / Math.PI
-  const tank2TurretAngle = tank2.angle - (tank2BodyAngle * 180) / Math.PI
+  const tank1TurretAngle = getTurretRotationDeg(tank1.angle, tank1BodyAngle)
+  const tank2TurretAngle = getTurretRotationDeg(tank2.angle, tank2BodyAngle)
 
   useEffect(() => {
     if (!shot?.path?.length) {
@@ -110,9 +153,12 @@ export const TankCanvas = ({
 
       if (localAim && localPlayer) {
         const activeTank = localPlayer === 1 ? tank1 : tank2
+        const activeBodyAngle = localPlayer === 1 ? tank1BodyAngle : tank2BodyAngle
         const points = getAimLine(
           { ...activeTank, angle: localAim.angle, power: localAim.power },
-          localAim.power
+          localAim.angle,
+          localAim.power,
+          activeBodyAngle
         )
         ctx.strokeStyle = '#a5b4fc'
         ctx.setLineDash([6, 6])
@@ -130,9 +176,12 @@ export const TankCanvas = ({
 
       if (opponentAim && localPlayer) {
         const opponentTank = localPlayer === 1 ? tank2 : tank1
+        const opponentBodyAngle = localPlayer === 1 ? tank2BodyAngle : tank1BodyAngle
         const points = getAimLine(
           { ...opponentTank, angle: opponentAim.angle, power: opponentAim.power },
-          opponentAim.power
+          opponentAim.angle,
+          opponentAim.power,
+          opponentBodyAngle
         )
         ctx.strokeStyle = '#fda4af'
         ctx.setLineDash([4, 8])
@@ -208,8 +257,8 @@ export const TankCanvas = ({
         <div
           className="absolute"
           style={{
-            left: tank1.position.x - tankSpriteSize.width / 2,
-            top: tank1.position.y - tankSpriteSize.height / 2,
+            left: tank1.position.x - tankSprite.width / 2,
+            top: tank1.position.y - tankSprite.height / 2,
             transform: `rotate(${tank1BodyAngle}rad)`,
             transformOrigin: '50% 100%'
           }}
@@ -219,8 +268,8 @@ export const TankCanvas = ({
         <div
           className="absolute"
           style={{
-            left: tank2.position.x - tankSpriteSize.width / 2,
-            top: tank2.position.y - tankSpriteSize.height / 2,
+            left: tank2.position.x - tankSprite.width / 2,
+            top: tank2.position.y - tankSprite.height / 2,
             transform: `rotate(${tank2BodyAngle}rad)`,
             transformOrigin: '50% 100%'
           }}
