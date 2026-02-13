@@ -152,7 +152,7 @@ const TankGame = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-2 w-full min-h-0 flex-1 max-w-[900px] overflow-hidden"
+        className="flex flex-col gap-2 w-full min-h-0 flex-1 max-w-[750px] overflow-hidden"
       >
         <RoomTurnBar
           playerNumber={playerNumber}

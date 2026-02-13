@@ -98,13 +98,13 @@ export default function GamePage({ params }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="w-full min-h-0 flex flex-col"
+          className="w-full min-h-0 flex flex-col flex-1 overflow-hidden"
         >
           <GameComponent />
         </motion.div>
       </div>
 
-      <div className={`${isMobile ? 'h-16' : 'h-20'}`} />
+      <div className={`${isMobile ? 'h-16' : 'h-24'}`} />
     </div>
   )
 }

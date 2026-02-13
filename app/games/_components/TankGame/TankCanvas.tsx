@@ -518,7 +518,10 @@ export const TankCanvas = ({
   }, [height, localAim, opponentAim, width, tank1, tank2, localPlayer, terrain, windSpeed, onShotComplete])
 
   return (
-    <div className="relative w-full max-w-[900px] mx-auto" style={{ aspectRatio: `${width}/${height}` }}>
+    <div
+      className="relative w-full max-w-[750px] mx-auto flex-1 min-h-0 min-w-0 overflow-hidden"
+      style={{ aspectRatio: `${width}/${height}`, maxHeight: '100%' }}
+    >
       <canvas ref={canvasRef} width={width} height={height} className="block w-full h-full" />
 
       <div className="absolute inset-0 pointer-events-none">
