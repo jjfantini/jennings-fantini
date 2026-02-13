@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'motion/react'
 import { GameShell } from '@/app/games/_components/shared/GameShell'
 import { MobileControls } from '@/app/games/_components/shared/MobileControls'
 import { useGameState } from '@/app/games/_hooks/useGameState'
@@ -147,7 +146,6 @@ const TetrisGame: React.FC = () => {
     setDifficulty,
     isPaused,
     isPlaying,
-    isGameOver,
     isAiEnabled,
     startGame,
     pauseGame,

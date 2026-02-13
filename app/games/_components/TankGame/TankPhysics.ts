@@ -252,7 +252,7 @@ export const simulateShot = ({
   }
 }
 
-export const clampAimAngle = (angle: number, _player: 1 | 2) =>
+export const clampAimAngle = (angle: number) =>
   Math.max(AIM_CONFIG.min, Math.min(AIM_CONFIG.max, angle))
 
 export const clampPower = (power: number) => Math.max(10, Math.min(100, power))
