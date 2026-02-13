@@ -53,7 +53,7 @@ export default function GamePage({ params }: Props) {
     >
       <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 via-transparent to-indigo-600/5 pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-5xl mx-auto">
+      <div className="relative z-10 w-full max-w-5xl mx-auto min-h-0 flex flex-col flex-1">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -98,7 +98,7 @@ export default function GamePage({ params }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="w-full"
+          className="w-full min-h-0 flex flex-col"
         >
           <GameComponent />
         </motion.div>

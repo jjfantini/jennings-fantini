@@ -51,12 +51,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <main className="flex-auto min-w-0 flex flex-col px-2" suppressHydrationWarning>
+        <main className="flex-1 min-w-0 flex flex-col px-2" suppressHydrationWarning>
           <RootProvider>
             {children}
-            <Navbar  />
+            <footer
+              className="min-h-32 shrink-0"
+              aria-hidden="true"
+              style={{ minHeight: 'calc(8rem + env(safe-area-inset-bottom, 0px))' }}
+            />
+            <Navbar />
           </RootProvider>
         </main>
       </body>

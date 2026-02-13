@@ -1,6 +1,6 @@
 export const TANK_GAME_CONFIG = {
   canvasWidth: 900,
-  canvasHeight: 520,
+  canvasHeight: 1000,
   terrainStep: 8,
   tankSize: { width: 30, height: 18 },
   projectileRadius: 4,
@@ -10,10 +10,7 @@ export const TANK_GAME_CONFIG = {
   maxSteps: 900,
   stepMs: 16,
   projectileFrictionAir: 0.0008,
-  windVelocityScale: 2,
-  windDragCoeff: 0.00015,
-  windDragQuadratic: 0.000012,
-  windMomentumRef: 8
+  windVelocityScale: 2
 } as const
 
 export const TANK_SPRITE = {
@@ -42,3 +39,10 @@ export const MISSILE_SPRITE = {
   width: 24,
   height: 12
 } as const
+
+export const WIND_SPRITES = [
+  { path: '/wind/wind-1.png', width: 175, height: 70 },
+  { path: '/wind/wind-2.png', width: 280, height: 87 },
+  { path: '/wind/wind-3.png', width: 388, height: 116 },
+  { path: '/wind/wind-4.png', width: 491, height: 132 }
+] as const

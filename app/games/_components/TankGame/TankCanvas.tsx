@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import { BlueTank, RedTank } from '@/app/games/_components/TankGame/TankAssets'
 import { buildTerrainPath, getTerrainAngle } from '@/app/games/_components/TankGame/TankTerrain'
 import type { PathPoint, ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
-import { TANK_GAME_CONFIG, TANK_SPRITE, BLUE_BARREL, RED_BARREL, MISSILE_SPRITE } from '@/app/games/_components/TankGame/tank.config'
+import {
+  TANK_GAME_CONFIG,
+  TANK_SPRITE,
+  BLUE_BARREL,
+  RED_BARREL,
+  MISSILE_SPRITE,
+  WIND_SPRITES
+} from '@/app/games/_components/TankGame/tank.config'
 import { relativeToScreenAngle } from '@/app/games/_components/TankGame/TankPhysics'
 
 type TankCanvasProps = {
@@ -12,6 +19,8 @@ type TankCanvasProps = {
   tank1: TankState
   tank2: TankState
   shot: ShotResult | null
+  windSpeed?: number
+  onShotComplete?: () => void
   localAim?: { angle: number; power: number } | null
   opponentAim?: { angle: number; power: number } | null
   localPlayer?: 1 | 2 | null
@@ -106,6 +115,51 @@ const getAimLine = (
   return [muzzleWorld, endpoint]
 }
 
+const WIND_MAX = 0.6
+const WIND_SLOTS_PER_SIDE = 5
+
+const getFilledSlotCount = (windSpeed: number) => {
+  const abs = Math.abs(windSpeed)
+  if (abs < 0.02) return 0
+  return Math.min(WIND_SLOTS_PER_SIDE, Math.ceil((abs / WIND_MAX) * WIND_SLOTS_PER_SIDE))
+}
+
+const WIND_PARTICLE_COUNT = [0, 16, 32, 48, 64, 80] as const
+const WIND_SPEED_PX_MS = [0, 0.024, 0.048, 0.072, 0.084, 0.096] as const
+const WIND_MAX_DISPLAY_HEIGHT = 22
+const WIND_MAX_SPRITE_HEIGHT = Math.max(...WIND_SPRITES.map((s) => s.height))
+const WIND_MAX_SPRITE_WIDTH = Math.max(...WIND_SPRITES.map((s) => s.width))
+const WIND_SCALE = WIND_MAX_DISPLAY_HEIGHT / WIND_MAX_SPRITE_HEIGHT
+const WIND_MAX_DISPLAY_WIDTH = WIND_MAX_SPRITE_WIDTH * WIND_SCALE
+const WIND_LERP_FACTOR = 0.06
+
+const WIND_RATIOS: [number, number, number, number][] = [
+  [0.7, 0.92, 0.98, 1.0], // level 1: mostly wind-1
+  [0.45, 0.8, 0.95, 1.0], // level 2
+  [0.25, 0.6, 0.88, 1.0], // level 3
+  [0.1, 0.35, 0.75, 1.0], // level 4
+  [0.02, 0.1, 0.4, 1.0] // level 5: mostly wind-4
+]
+
+const windParticleHash = (n: number) => {
+  const x = Math.sin(n * 12.9898) * 43758.5453
+  return x - Math.floor(x)
+}
+
+const getWindImageIndex = (particleIndex: number, level: number): 0 | 1 | 2 | 3 => {
+  const h = windParticleHash(particleIndex + level * 1000)
+  const thresholds = WIND_RATIOS[level]
+  for (let i = 0; i < 4; i++) if (h < thresholds[i]) return i as 0 | 1 | 2 | 3
+  return 3
+}
+
+const lerpWindValue = (arr: readonly number[], t: number): number => {
+  const lo = Math.max(0, Math.floor(t))
+  const hi = Math.min(arr.length - 1, lo + 1)
+  const frac = t - lo
+  return arr[lo] * (1 - frac) + arr[hi] * frac
+}
+
 export const TankCanvas = ({
   width,
   height,
@@ -113,6 +167,8 @@ export const TankCanvas = ({
   tank1,
   tank2,
   shot,
+  windSpeed = 0,
+  onShotComplete,
   localAim,
   opponentAim,
   localPlayer
@@ -121,6 +177,12 @@ export const TankCanvas = ({
   const animationRef = useRef<number | null>(null)
   const shotRef = useRef<ShotAnimation | null>(null)
   const missileImgRef = useRef<HTMLImageElement | null>(null)
+  const windImgRefs = useRef<(HTMLImageElement | null)[]>([])
+  const displayWindLevelRef = useRef(0)
+  const displayWindDirectionRef = useRef(1)
+  const windPhaseRef = useRef(0)
+  const lastWindFrameTimeRef = useRef<number | null>(null)
+  const explosionCompleteCalledRef = useRef(false)
   const previousTerrainRef = useRef<TerrainMap>(terrain)
   const tankSnapshotRef = useRef<{ tank1: TankState; tank2: TankState }>({ tank1, tank2 })
   const [visualTerrain, setVisualTerrain] = useState<TerrainMap>(terrain)
@@ -144,6 +206,7 @@ export const TankCanvas = ({
       shotRef.current = null
       return
     }
+    explosionCompleteCalledRef.current = false
     const { tank1: tank1Snapshot, tank2: tank2Snapshot } = tankSnapshotRef.current
     shotRef.current = {
       path: shot.path,
@@ -169,6 +232,22 @@ export const TankCanvas = ({
     img.onload = () => {
       missileImgRef.current = img
     }
+  }, [])
+
+  useEffect(() => {
+    const refs: (HTMLImageElement | null)[] = []
+    let loaded = 0
+    WIND_SPRITES.forEach((sprite, i) => {
+      const img = new Image()
+      img.src = sprite.path
+      img.onload = () => {
+        refs[i] = img
+        loaded++
+        if (loaded === WIND_SPRITES.length) {
+          windImgRefs.current = refs
+        }
+      }
+    })
   }, [])
 
   useEffect(() => {
@@ -218,6 +297,69 @@ export const TankCanvas = ({
       gradient.addColorStop(1, '#020617')
       ctx.fillStyle = gradient
       ctx.fillRect(0, 0, width, height)
+
+      const targetLevel = getFilledSlotCount(windSpeed)
+      const targetDirection = windSpeed >= 0 ? 1 : -1
+
+      displayWindLevelRef.current = Math.max(
+        0,
+        Math.min(
+          5,
+          displayWindLevelRef.current +
+            (targetLevel - displayWindLevelRef.current) * WIND_LERP_FACTOR
+        )
+      )
+      displayWindDirectionRef.current +=
+        (targetDirection - displayWindDirectionRef.current) * WIND_LERP_FACTOR
+
+      const displayLevel = displayWindLevelRef.current
+      const displayDirection = displayWindDirectionRef.current
+
+      if (displayLevel <= 0.01) {
+        lastWindFrameTimeRef.current = null
+      }
+
+      if (displayLevel > 0.01) {
+        const skyHeight = height * 0.78
+        const count = Math.round(lerpWindValue(WIND_PARTICLE_COUNT, displayLevel))
+        const speedPxMs = lerpWindValue(WIND_SPEED_PX_MS, displayLevel)
+        const velocity = displayDirection * speedPxMs
+        const now = performance.now()
+        const lastTime = lastWindFrameTimeRef.current
+        if (lastTime !== null) {
+          const dt = Math.min(50, now - lastTime)
+          windPhaseRef.current += velocity * dt
+        }
+        lastWindFrameTimeRef.current = now
+        const phase = windPhaseRef.current
+        const wrap = width + WIND_MAX_DISPLAY_WIDTH
+        const level = Math.min(4, Math.floor(displayLevel))
+        const direction = displayDirection >= 0 ? 1 : -1
+
+        ctx.imageSmoothingEnabled = false
+
+        for (let i = 0; i < count; i++) {
+          const imgIndex = getWindImageIndex(i, level)
+          const img = windImgRefs.current[imgIndex]
+          if (!img?.complete || img.naturalWidth === 0) continue
+
+          const sprite = WIND_SPRITES[imgIndex]
+          const w = sprite.width * WIND_SCALE
+          const h = sprite.height * WIND_SCALE
+
+          const baseX = windParticleHash(i) * width
+          const baseY = windParticleHash(i + 100) * Math.max(1, skyHeight - h)
+          const phaseOffset = windParticleHash(i + 200) * wrap
+          const rawX = (((baseX + phase + phaseOffset) % wrap) + wrap) % wrap
+          const x = rawX + (direction === 1 ? -WIND_MAX_DISPLAY_WIDTH : 0)
+
+          ctx.save()
+          ctx.translate(x, baseY)
+          if (direction === -1) ctx.scale(-1, 1)
+          ctx.drawImage(img, -w / 2, -h / 2, w, h)
+          ctx.restore()
+        }
+      }
 
       ctx.beginPath()
       ctx.moveTo(0, height)
@@ -316,8 +458,10 @@ export const TankCanvas = ({
         if (progress >= 1 && shotAnimation.impact) {
           const explosionProgress = Math.min(1, (elapsed - duration) / 400)
           if (explosionProgress < 0.3) {
-            const lastIndex = Math.max(0, shotAnimation.path.length - 1)
-            drawMissileAt(shotAnimation.impact.x, shotAnimation.impact.y, lastIndex)
+            // Use second-to-last path point for angle: last point has post-collision velocity (wrong angle)
+            const velocityIndex =
+              shotAnimation.path.length >= 2 ? shotAnimation.path.length - 2 : shotAnimation.path.length - 1
+            drawMissileAt(shotAnimation.impact.x, shotAnimation.impact.y, Math.max(0, velocityIndex))
           }
           ctx.fillStyle = `rgba(248, 113, 113, ${1 - explosionProgress})`
           ctx.beginPath()
@@ -346,7 +490,13 @@ export const TankCanvas = ({
           setTankFallDurations({ tank1: tank1Duration, tank2: tank2Duration })
         }
 
-        if (progress >= 1.2) {
+        const explosionDuration = shotAnimation.impact ? 400 : 0
+        const explosionComplete = elapsed >= duration + explosionDuration
+        if (explosionComplete) {
+          if (!explosionCompleteCalledRef.current) {
+            explosionCompleteCalledRef.current = true
+            onShotComplete?.()
+          }
           shotRef.current = null
           setVisualTerrain(terrain)
           setVisualTank1(tank1)
@@ -365,20 +515,20 @@ export const TankCanvas = ({
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [height, localAim, opponentAim, width, tank1, tank2, localPlayer, terrain])
+  }, [height, localAim, opponentAim, width, tank1, tank2, localPlayer, terrain, windSpeed, onShotComplete])
 
   return (
-    <div className="relative" style={{ width, height }}>
-      <canvas ref={canvasRef} width={width} height={height} className="block" />
+    <div className="relative w-full max-w-[900px] mx-auto" style={{ aspectRatio: `${width}/${height}` }}>
+      <canvas ref={canvasRef} width={width} height={height} className="block w-full h-full" />
 
-      <div className="absolute left-0 top-0 h-full w-full pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none">
         <div
           className="absolute overflow-hidden"
           style={{
-            left: visualTank1.position.x - tankSprite.width / 2,
-            top: visualTank1.position.y - tankSprite.height / 2,
-            width: tankSprite.width,
-            height: tankSprite.height,
+            left: `${((visualTank1.position.x - tankSprite.width / 2) / width) * 100}%`,
+            top: `${((visualTank1.position.y - tankSprite.height / 2) / height) * 100}%`,
+            width: `${(tankSprite.width / width) * 100}%`,
+            height: `${(tankSprite.height / height) * 100}%`,
             transform: `rotate(${tank1BodyAngle}rad)`,
             transformOrigin: '50% 100%',
             transition:
@@ -392,10 +542,10 @@ export const TankCanvas = ({
         <div
           className="absolute overflow-hidden"
           style={{
-            left: visualTank2.position.x - tankSprite.width / 2,
-            top: visualTank2.position.y - tankSprite.height / 2,
-            width: tankSprite.width,
-            height: tankSprite.height,
+            left: `${((visualTank2.position.x - tankSprite.width / 2) / width) * 100}%`,
+            top: `${((visualTank2.position.y - tankSprite.height / 2) / height) * 100}%`,
+            width: `${(tankSprite.width / width) * 100}%`,
+            height: `${(tankSprite.height / height) * 100}%`,
             transform: `rotate(${tank2BodyAngle}rad)`,
             transformOrigin: '50% 100%',
             transition:
