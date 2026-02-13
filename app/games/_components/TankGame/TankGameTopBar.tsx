@@ -49,46 +49,43 @@ const WindBar = ({
   pointsLeft: boolean
   filledCount: number
 }) => (
-  <>
-    <div className="flex items-center gap-0.5 flex-1 justify-end">
+  <div className="flex items-stretch w-full h-full">
+    <div className="flex flex-1 min-w-0">
       {Array.from({ length: WIND_SLOTS_PER_SIDE }, (_, i) => {
         const filled = pointsLeft && i >= WIND_SLOTS_PER_SIDE - filledCount
         return (
-          <svg
-            key={`l-${i}`}
-            width="12"
-            height="9"
-            viewBox="0 0 14 10"
-            className="shrink-0 text-sky-400"
-            aria-hidden
-          >
-            <path d={pathPointsLeft} fill="currentColor" opacity={filled ? 0.9 : 0.25} />
-          </svg>
+          <div key={`l-${i}`} className="flex-1 min-w-0 flex items-center justify-center">
+            <svg
+              viewBox="0 0 14 10"
+              className="w-full h-full max-h-full text-sky-400 object-contain"
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden
+            >
+              <path d={pathPointsLeft} fill="currentColor" opacity={filled ? 0.9 : 0.25} />
+            </svg>
+          </div>
         )
       })}
     </div>
-    <div
-      className="shrink-0 w-px h-full bg-white/20 mx-0.5"
-      aria-hidden
-    />
-    <div className="flex items-center gap-0.5 flex-1 justify-start">
+    <div className="shrink-0 w-px bg-white/20" aria-hidden />
+    <div className="flex flex-1 min-w-0">
       {Array.from({ length: WIND_SLOTS_PER_SIDE }, (_, i) => {
         const filled = !pointsLeft && i < filledCount
         return (
-          <svg
-            key={`r-${i}`}
-            width="12"
-            height="9"
-            viewBox="0 0 14 10"
-            className="shrink-0 text-sky-400"
-            aria-hidden
-          >
-            <path d={pathPointsRight} fill="currentColor" opacity={filled ? 0.9 : 0.25} />
-          </svg>
+          <div key={`r-${i}`} className="flex-1 min-w-0 flex items-center justify-center">
+            <svg
+              viewBox="0 0 14 10"
+              className="w-full h-full max-h-full text-sky-400 object-contain"
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden
+            >
+              <path d={pathPointsRight} fill="currentColor" opacity={filled ? 0.9 : 0.25} />
+            </svg>
+          </div>
         )
       })}
     </div>
-  </>
+  </div>
 )
 
 export const TankGameTopBar = ({
@@ -120,9 +117,9 @@ export const TankGameTopBar = ({
         />
       </div>
 
-      <div className={`flex flex-col gap-1.5 shrink-0 w-[160px] sm:w-[180px] mx-1 sm:mx-2 ${boxClass}`}>
+      <div className={`flex flex-col gap-1.5 shrink-0 min-w-[152px] w-[176px] sm:w-[180px] mx-1 sm:mx-2 px-2 sm:px-3 py-2 rounded-lg border border-neutral-800 bg-neutral-900/80`}>
         <span className="text-xs uppercase text-neutral-500 text-center">wind</span>
-        <div className="h-5 w-full rounded-md border border-neutral-600 bg-neutral-800/60 overflow-hidden flex items-center">
+        <div className="h-5 w-full min-w-0 rounded-md border border-neutral-600 bg-neutral-800/60 flex">
           <WindBar pointsLeft={pointsLeft} filledCount={filledSlots} />
         </div>
       </div>
