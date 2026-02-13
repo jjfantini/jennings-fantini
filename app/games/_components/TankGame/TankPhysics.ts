@@ -16,6 +16,7 @@ type SimulationConfig = {
   tankSize: { width: number; height: number }
   maxSteps: number
   stepMs: number
+  projectileFrictionAir?: number
   windVelocityScale: number
   windDragCoeff: number
   windDragQuadratic: number
@@ -144,7 +145,7 @@ export const simulateShot = ({
   const projectile = Matter.Bodies.circle(launchX, launchY, config.projectileRadius, {
     restitution: 0.2,
     friction: 0.1,
-    frictionAir: 0.002,
+    frictionAir: config.projectileFrictionAir ?? 0.0008,
     label: 'projectile'
   })
 
@@ -163,23 +164,27 @@ export const simulateShot = ({
     Matter.Engine.update(engine, config.stepMs)
     if (windSpeed !== 0) {
       const vx = projectile.velocity.x
+      const vy = projectile.velocity.y
+      const vMag = Math.hypot(vx, vy)
       const vRef = config.windMomentumRef
-      const momentumScale = Math.max(0, 1 - Math.abs(vx) / vRef)
+      const momentumScale = Math.max(0, 1 - vMag / vRef)
 
       if (momentumScale > 0) {
-        const vWind = windSpeed * config.windVelocityScale
-        const vRel = vWind - vx
+        const wX = windSpeed * config.windVelocityScale
+        const vRelX = vx - wX
+        const vRelY = vy
+        const vRelMag = Math.hypot(vRelX, vRelY)
         const mass = projectile.mass ?? 1
-        const linearDrag = config.windDragCoeff * vRel * mass
-        const quadraticDrag = config.windDragQuadratic * vRel * Math.abs(vRel) * mass
-        let forceX = (linearDrag + quadraticDrag) * momentumScale
+        const kLin = config.windDragCoeff * mass
+        const kQuad = config.windDragQuadratic * mass
+        let forceX = -(kLin * vRelX + kQuad * vRelMag * vRelX) * momentumScale
+        let forceY = -(kLin * vRelY + kQuad * vRelMag * vRelY) * momentumScale
         const dt = config.stepMs / 1000
-        if (vx > 0 && forceX < -vx * mass / dt) {
-          forceX = -vx * mass / dt
-        } else if (vx < 0 && forceX > -vx * mass / dt) {
-          forceX = -vx * mass / dt
-        }
-        Matter.Body.applyForce(projectile, projectile.position, { x: forceX, y: 0 })
+        if (vx > 0 && forceX < -vx * mass / dt) forceX = -vx * mass / dt
+        else if (vx < 0 && forceX > -vx * mass / dt) forceX = -vx * mass / dt
+        if (vy > 0 && forceY < -vy * mass / dt) forceY = -vy * mass / dt
+        else if (vy < 0 && forceY > -vy * mass / dt) forceY = -vy * mass / dt
+        Matter.Body.applyForce(projectile, projectile.position, { x: forceX, y: forceY })
       }
     }
     path.push({
