@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { BlueTank, RedTank } from '@/app/games/_components/TankGame/TankAssets'
 import { buildTerrainPath, getTerrainAngle } from '@/app/games/_components/TankGame/TankTerrain'
-import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
-import { TANK_GAME_CONFIG, TANK_SPRITE, BLUE_BARREL, RED_BARREL } from '@/app/games/_components/TankGame/tank.config'
+import type { PathPoint, ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
+import { TANK_GAME_CONFIG, TANK_SPRITE, BLUE_BARREL, RED_BARREL, MISSILE_SPRITE } from '@/app/games/_components/TankGame/tank.config'
 import { relativeToScreenAngle } from '@/app/games/_components/TankGame/TankPhysics'
 
 type TankCanvasProps = {
@@ -18,7 +18,7 @@ type TankCanvasProps = {
 }
 
 type ShotAnimation = {
-  path: TankVector[]
+  path: PathPoint[]
   impact: TankVector | null
   startTime: number
   terrainSnapshot: TerrainMap
@@ -57,6 +57,22 @@ const getTurretRotationDeg = (aimAngleDeg: number, bodyAngleRad: number, player:
 }
 
 type BarrelConfig = { barrelPivot: { x: number; y: number }; turretMuzzle: { x: number; y: number } }
+
+const getPathPointVelocity = (path: PathPoint[], index: number): { vx: number; vy: number } => {
+  const point = path[index] as PathPoint | undefined
+  if (point?.vx != null && point?.vy != null) {
+    return { vx: point.vx, vy: point.vy }
+  }
+  if (index < path.length - 1) {
+    const next = path[index + 1]
+    return { vx: next.x - (path[index]?.x ?? 0), vy: next.y - (path[index]?.y ?? 0) }
+  }
+  if (index > 0) {
+    const prev = path[index - 1]
+    return { vx: (path[index]?.x ?? 0) - prev.x, vy: (path[index]?.y ?? 0) - prev.y }
+  }
+  return { vx: 1, vy: 0 }
+}
 
 const getAimLine = (
   tank: TankState,
@@ -104,6 +120,7 @@ export const TankCanvas = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const animationRef = useRef<number | null>(null)
   const shotRef = useRef<ShotAnimation | null>(null)
+  const missileImgRef = useRef<HTMLImageElement | null>(null)
   const previousTerrainRef = useRef<TerrainMap>(terrain)
   const tankSnapshotRef = useRef<{ tank1: TankState; tank2: TankState }>({ tank1, tank2 })
   const [visualTerrain, setVisualTerrain] = useState<TerrainMap>(terrain)
@@ -144,6 +161,14 @@ export const TankCanvas = ({
     setVisualTank2(tank2Snapshot)
     setTankFallDurations({ tank1: 0, tank2: 0 })
   }, [shot])
+
+  useEffect(() => {
+    const img = new Image()
+    img.src = '/ammo/missile.png'
+    img.onload = () => {
+      missileImgRef.current = img
+    }
+  }, [])
 
   useEffect(() => {
     previousTerrainRef.current = terrain
@@ -261,21 +286,37 @@ export const TankCanvas = ({
       if (shotAnimation) {
         const index = Math.floor(progress * (shotAnimation.path.length - 1))
         const currentPoint = shotAnimation.path[index]
+        const missileImg = missileImgRef.current
+
+        const drawMissileAt = (x: number, y: number, pathIndex: number) => {
+          const { vx, vy } = getPathPointVelocity(shotAnimation!.path, pathIndex)
+          const angle = Math.atan2(vy, vx)
+          if (missileImg?.complete && missileImg.naturalWidth > 0) {
+            const w = MISSILE_SPRITE.width
+            const h = MISSILE_SPRITE.height
+            ctx.save()
+            ctx.imageSmoothingEnabled = false
+            ctx.translate(x, y)
+            ctx.rotate(angle)
+            ctx.drawImage(missileImg, -w / 2, -h / 2, w, h)
+            ctx.restore()
+          } else {
+            ctx.fillStyle = '#fbbf24'
+            ctx.beginPath()
+            ctx.arc(x, y, 4, 0, Math.PI * 2)
+            ctx.fill()
+          }
+        }
 
         if (currentPoint && progress < 1) {
-          ctx.fillStyle = '#fbbf24'
-          ctx.beginPath()
-          ctx.arc(currentPoint.x, currentPoint.y, 4, 0, Math.PI * 2)
-          ctx.fill()
+          drawMissileAt(currentPoint.x, currentPoint.y, index)
         }
 
         if (progress >= 1 && shotAnimation.impact) {
           const explosionProgress = Math.min(1, (elapsed - duration) / 400)
           if (explosionProgress < 0.3) {
-            ctx.fillStyle = '#fbbf24'
-            ctx.beginPath()
-            ctx.arc(shotAnimation.impact.x, shotAnimation.impact.y, 4, 0, Math.PI * 2)
-            ctx.fill()
+            const lastIndex = Math.max(0, shotAnimation.path.length - 1)
+            drawMissileAt(shotAnimation.impact.x, shotAnimation.impact.y, lastIndex)
           }
           ctx.fillStyle = `rgba(248, 113, 113, ${1 - explosionProgress})`
           ctx.beginPath()

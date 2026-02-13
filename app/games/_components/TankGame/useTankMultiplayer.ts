@@ -129,7 +129,8 @@ export const useTankMultiplayer = () => {
                 stepMs: TANK_GAME_CONFIG.stepMs,
                 windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
                 windDragCoeff: TANK_GAME_CONFIG.windDragCoeff,
-                windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic
+                windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic,
+                windMomentumRef: TANK_GAME_CONFIG.windMomentumRef
               }
             })
             setShot(simulation)
@@ -501,7 +502,8 @@ export const useTankMultiplayer = () => {
         stepMs: TANK_GAME_CONFIG.stepMs,
         windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
         windDragCoeff: TANK_GAME_CONFIG.windDragCoeff,
-        windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic
+        windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic,
+        windMomentumRef: TANK_GAME_CONFIG.windMomentumRef
       }
     })
 

@@ -1,5 +1,5 @@
 import Matter from 'matter-js'
-import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
+import type { PathPoint, ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
 import {
   applyCrater,
   getTankRestingPosition,
@@ -19,6 +19,7 @@ type SimulationConfig = {
   windVelocityScale: number
   windDragCoeff: number
   windDragQuadratic: number
+  windMomentumRef: number
 }
 
 type SimulationInput = {
@@ -154,32 +155,39 @@ export const simulateShot = ({
 
   Matter.World.add(engine.world, [projectile, tank1Body, tank2Body, ...terrainBodies])
 
-  const path: TankVector[] = []
+  const path: PathPoint[] = []
   let impact: TankVector | null = null
   let hitTank: 1 | 2 | null = null
 
   for (let step = 0; step < config.maxSteps; step += 1) {
     Matter.Engine.update(engine, config.stepMs)
     if (windSpeed !== 0) {
-      const vWind = windSpeed * config.windVelocityScale
-      const vRel = vWind - projectile.velocity.x
-      const mass = projectile.mass ?? 1
-      const linearDrag = config.windDragCoeff * vRel * mass
-      const quadraticDrag = config.windDragQuadratic * vRel * Math.abs(vRel) * mass
-      let forceX = linearDrag + quadraticDrag
-      const dt = config.stepMs / 1000
       const vx = projectile.velocity.x
-      if (Math.abs(vx) < 0.01) forceX = 0
-      else if (vx > 0 && forceX > 0) forceX = 0
-      else if (vx < 0 && forceX < 0) forceX = 0
-      if (vx > 0 && forceX < -vx * mass / dt) {
-        forceX = -vx * mass / dt
-      } else if (vx < 0 && forceX > -vx * mass / dt) {
-        forceX = -vx * mass / dt
+      const vRef = config.windMomentumRef
+      const momentumScale = Math.max(0, 1 - Math.abs(vx) / vRef)
+
+      if (momentumScale > 0) {
+        const vWind = windSpeed * config.windVelocityScale
+        const vRel = vWind - vx
+        const mass = projectile.mass ?? 1
+        const linearDrag = config.windDragCoeff * vRel * mass
+        const quadraticDrag = config.windDragQuadratic * vRel * Math.abs(vRel) * mass
+        let forceX = (linearDrag + quadraticDrag) * momentumScale
+        const dt = config.stepMs / 1000
+        if (vx > 0 && forceX < -vx * mass / dt) {
+          forceX = -vx * mass / dt
+        } else if (vx < 0 && forceX > -vx * mass / dt) {
+          forceX = -vx * mass / dt
+        }
+        Matter.Body.applyForce(projectile, projectile.position, { x: forceX, y: 0 })
       }
-      Matter.Body.applyForce(projectile, projectile.position, { x: forceX, y: 0 })
     }
-    path.push({ x: projectile.position.x, y: projectile.position.y })
+    path.push({
+      x: projectile.position.x,
+      y: projectile.position.y,
+      vx: projectile.velocity.x,
+      vy: projectile.velocity.y
+    })
 
     if (
       projectile.position.x < 0 ||

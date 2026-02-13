@@ -58,7 +58,9 @@ export type TankLastAction =
       type: 'none'
     }
 
-export type ProjectilePath = TankVector[]
+export type PathPoint = TankVector & { vx?: number; vy?: number }
+
+export type ProjectilePath = PathPoint[]
 
 export type ShotResult = {
   path: ProjectilePath

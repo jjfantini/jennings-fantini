@@ -9,9 +9,10 @@ export const TANK_GAME_CONFIG = {
   powerScale: 0.12,
   maxSteps: 600,
   stepMs: 16,
-  windVelocityScale: 6,
-  windDragCoeff: 0.001,
-  windDragQuadratic: 0.00015
+  windVelocityScale: 2,
+  windDragCoeff: 0.00015,
+  windDragQuadratic: 0.000012,
+  windMomentumRef: 8
 } as const
 
 export const TANK_SPRITE = {
@@ -34,4 +35,9 @@ export const AIM_CONFIG = {
   min: -10,
   max: 90,
   default: 45
+} as const
+
+export const MISSILE_SPRITE = {
+  width: 24,
+  height: 12
 } as const
