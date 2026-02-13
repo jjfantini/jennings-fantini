@@ -358,6 +358,8 @@ export const DATA = {
         "Built an AI-powered SaaS platform that generates a customizable podcast from any text, topic, urls, or files. Users can sign up, customize their podcast, and download or listen to the generated podcast on the platform.",
       technologies: [
         "⚛️ Next.js",
+        "🤖 OpenAI",
+        "🎤 ElevenLabs",
         "🔷 TypeScript",
         "🗃️ Supabase",
         "🎨 Tailwind CSS",
