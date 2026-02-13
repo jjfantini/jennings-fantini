@@ -509,6 +509,7 @@ export const useTankMultiplayer = () => {
     const nextTurn = playerNumber === 1 ? 2 : 1
     const winner =
       simulation.player1Lives === 0 ? 2 : simulation.player2Lives === 0 ? 1 : null
+    const windChanges = nextTurn === 1 && !winner
 
     setShot(simulation)
     lastFireRef.current = updatedAt
@@ -524,6 +525,7 @@ export const useTankMultiplayer = () => {
         current_turn: winner ? game.current_turn : nextTurn,
         status: winner ? 'finished' : 'playing',
         winner,
+        ...(windChanges && { wind_speed: generateWindSpeed() }),
         last_action: {
           type: 'fire',
           player: playerNumber,

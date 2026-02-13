@@ -30,22 +30,18 @@ const LivesBar = ({
   </div>
 )
 
+const WIND_MAX = 0.6
+
 const getWindTriangleCount = (windSpeed: number) => {
   const abs = Math.abs(windSpeed)
-  if (abs < 0.05) return 0
-  if (abs < 0.15) return 1
-  if (abs < 0.3) return 2
-  if (abs < 0.45) return 3
-  if (abs < 0.55) return 4
-  if (abs < 0.7) return 5
-  if (abs < 0.85) return 6
-  return 7
+  if (abs < 0.02) return 0
+  return Math.min(7, Math.ceil((abs / WIND_MAX) * 7))
 }
 
 const WindArrow = ({ pointsLeft, count }: { pointsLeft: boolean; count: number }) => {
-  const pathLeft = 'M14 5L4 0v10l10-5z'
-  const pathRight = 'M0 5l10 5V0L0 5z'
-  const path = pointsLeft ? pathLeft : pathRight
+  const pathPointsRight = 'M14 5L4 0v10l10-5z'
+  const pathPointsLeft = 'M0 5l10 5V0L0 5z'
+  const path = pointsLeft ? pathPointsLeft : pathPointsRight
   return (
     <div
       className={`flex items-center gap-0.5 ${pointsLeft ? '' : 'flex-row-reverse'}`}
@@ -68,9 +64,11 @@ export const TankGameTopBar = ({
   const pointsLeft = windSpeed < 0
   const triangleCount = getWindTriangleCount(windSpeed)
 
+  const boxClass = 'rounded-lg border border-neutral-800 bg-neutral-900/80 px-3 py-2'
+
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-800 bg-neutral-900/80 px-4 py-3 w-full">
-      <div className="flex flex-col gap-1.5 min-w-[80px]">
+    <div className="flex items-center justify-between gap-3 w-full">
+      <div className={`flex flex-col gap-1.5 min-w-[80px] ${boxClass}`}>
         <div className="flex items-center gap-2">
           {currentTurn === 1 && (
             <span className="text-emerald-400 text-xs" aria-hidden>
@@ -86,9 +84,9 @@ export const TankGameTopBar = ({
         />
       </div>
 
-      <div className="flex flex-col gap-1.5 flex-1 max-w-[240px] mx-4">
+      <div className={`flex flex-col gap-1.5 w-[240px] shrink-0 mx-2 ${boxClass}`}>
         <span className="text-xs uppercase text-neutral-500 text-center">wind</span>
-        <div className="relative h-5 rounded-md border border-neutral-600 bg-neutral-800/60">
+        <div className="relative h-5 w-full min-w-[130px] rounded-md border border-neutral-600 bg-neutral-800/60 overflow-hidden">
           <div
             className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-white/20"
             aria-hidden
@@ -96,7 +94,7 @@ export const TankGameTopBar = ({
           {triangleCount > 0 && (
             <div
               className="absolute top-1/2 -translate-y-1/2"
-              style={pointsLeft ? { left: '50%' } : { right: '50%' }}
+              style={pointsLeft ? { right: '50%' } : { left: '50%' }}
             >
               <WindArrow pointsLeft={pointsLeft} count={triangleCount} />
             </div>
@@ -104,7 +102,7 @@ export const TankGameTopBar = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 min-w-[80px] items-end">
+      <div className={`flex flex-col gap-1.5 min-w-[80px] items-end ${boxClass}`}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-rose-200">P2</span>
           {currentTurn === 2 && (

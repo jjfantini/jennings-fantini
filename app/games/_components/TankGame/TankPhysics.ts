@@ -169,6 +169,9 @@ export const simulateShot = ({
       let forceX = linearDrag + quadraticDrag
       const dt = config.stepMs / 1000
       const vx = projectile.velocity.x
+      if (Math.abs(vx) < 0.01) forceX = 0
+      else if (vx > 0 && forceX > 0) forceX = 0
+      else if (vx < 0 && forceX < 0) forceX = 0
       if (vx > 0 && forceX < -vx * mass / dt) {
         forceX = -vx * mass / dt
       } else if (vx < 0 && forceX > -vx * mass / dt) {

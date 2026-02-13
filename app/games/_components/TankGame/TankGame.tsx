@@ -89,7 +89,7 @@ const TankGame = () => {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col lg:flex-row gap-4 items-start w-full"
       >
-        <div className="w-full lg:w-auto relative">
+        <div className="w-full lg:w-auto relative rounded-xl overflow-hidden">
           <div className="absolute top-0 left-0 right-0 z-10 px-2 pt-2">
             <TankGameTopBar
               player1Lives={game.player1_lives}
