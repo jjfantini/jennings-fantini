@@ -39,3 +39,10 @@ export const MISSILE_SPRITE = {
   width: 24,
   height: 12
 } as const
+
+export const WIND_SPRITES = [
+  { path: '/wind/wind-1.png', width: 175, height: 70 },
+  { path: '/wind/wind-2.png', width: 280, height: 87 },
+  { path: '/wind/wind-3.png', width: 388, height: 116 },
+  { path: '/wind/wind-4.png', width: 491, height: 132 }
+] as const

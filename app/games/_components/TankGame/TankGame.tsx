@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { TankLobby } from '@/app/games/_components/TankGame/TankLobby'
 import { RoomTurnBar, StatusMessage } from '@/app/games/_components/TankGame/TankHUD'
@@ -17,6 +17,7 @@ const TankGame = () => {
     roomCode,
     error,
     shot,
+    displayWindSpeed,
     statusMessage,
     opponentAim,
     createGame,
@@ -24,6 +25,7 @@ const TankGame = () => {
     joinGame,
     updateAim,
     fire,
+    setShot,
     resumeLastRoom
   } = useTankMultiplayer()
 
@@ -55,6 +57,7 @@ const TankGame = () => {
   const isReady = game && game.status !== 'waiting'
   const isMyTurn = game?.current_turn === playerNumber && game?.status === 'playing'
   const resumeCode = useMemo(() => resumeLastRoom(), [resumeLastRoom])
+  const onShotComplete = useCallback(() => setShot(null), [setShot])
 
   if (!game) {
     return (
@@ -88,7 +91,7 @@ const TankGame = () => {
         <TankGameTopBar
           player1Lives={game.player1_lives}
           player2Lives={game.player2_lives}
-          windSpeed={game.wind_speed ?? 0}
+          windSpeed={displayWindSpeed}
           currentTurn={game.current_turn}
         />
       </div>
@@ -99,7 +102,8 @@ const TankGame = () => {
         tank1={game.tank1_position}
         tank2={game.tank2_position}
         shot={shot}
-        windSpeed={game.wind_speed ?? 0}
+        windSpeed={displayWindSpeed}
+        onShotComplete={onShotComplete}
         localAim={isMyTurn ? { angle, power } : null}
         opponentAim={opponentAim}
         localPlayer={playerNumber}

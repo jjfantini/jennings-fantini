@@ -85,6 +85,7 @@ export const useTankMultiplayer = () => {
   const lastFireRef = useRef<string | null>(null)
   const rematchSwitchRef = useRef<string | null>(null)
   const playerNumberRef = useRef<1 | 2 | null>(playerNumber)
+  const windAtShotRef = useRef<number>(0)
   playerNumberRef.current = playerNumber
 
   useEffect(() => {
@@ -133,6 +134,7 @@ export const useTankMultiplayer = () => {
                 windVelocityScale: TANK_GAME_CONFIG.windVelocityScale
               }
             })
+            windAtShotRef.current = previousGame.wind_speed ?? 0
             setShot(simulation)
             lastFireRef.current = lastAction.updated_at
           }
@@ -529,6 +531,7 @@ export const useTankMultiplayer = () => {
       simulation.player1Lives === 0 ? 2 : simulation.player2Lives === 0 ? 1 : null
     const windChanges = nextTurn === 1 && !winner
 
+    windAtShotRef.current = game.wind_speed ?? 0
     setShot(simulation)
     lastFireRef.current = updatedAt
 
@@ -601,6 +604,8 @@ export const useTankMultiplayer = () => {
 
   const roomCode = game?.room_code ?? ''
 
+  const displayWindSpeed = shot ? windAtShotRef.current : (game?.wind_speed ?? 0)
+
   return {
     game,
     playerId,
@@ -608,6 +613,7 @@ export const useTankMultiplayer = () => {
     roomCode,
     error,
     shot,
+    displayWindSpeed,
     statusMessage,
     opponentAim,
     createGame,
