@@ -316,8 +316,10 @@ export const TankCanvas = ({
         if (progress >= 1 && shotAnimation.impact) {
           const explosionProgress = Math.min(1, (elapsed - duration) / 400)
           if (explosionProgress < 0.3) {
-            const lastIndex = Math.max(0, shotAnimation.path.length - 1)
-            drawMissileAt(shotAnimation.impact.x, shotAnimation.impact.y, lastIndex)
+            // Use second-to-last path point for angle: last point has post-collision velocity (wrong angle)
+            const velocityIndex =
+              shotAnimation.path.length >= 2 ? shotAnimation.path.length - 2 : shotAnimation.path.length - 1
+            drawMissileAt(shotAnimation.impact.x, shotAnimation.impact.y, Math.max(0, velocityIndex))
           }
           ctx.fillStyle = `rgba(248, 113, 113, ${1 - explosionProgress})`
           ctx.beginPath()

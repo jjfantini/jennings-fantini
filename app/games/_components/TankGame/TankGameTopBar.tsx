@@ -31,29 +31,65 @@ const LivesBar = ({
 )
 
 const WIND_MAX = 0.6
+const WIND_SLOTS_PER_SIDE = 5
 
-const getWindTriangleCount = (windSpeed: number) => {
+const getFilledSlotCount = (windSpeed: number) => {
   const abs = Math.abs(windSpeed)
   if (abs < 0.02) return 0
-  return Math.min(7, Math.ceil((abs / WIND_MAX) * 7))
+  return Math.min(WIND_SLOTS_PER_SIDE, Math.ceil((abs / WIND_MAX) * WIND_SLOTS_PER_SIDE))
 }
 
-const WindArrow = ({ pointsLeft, count }: { pointsLeft: boolean; count: number }) => {
-  const pathPointsRight = 'M14 5L4 0v10l10-5z'
-  const pathPointsLeft = 'M0 5l10 5V0L0 5z'
-  const path = pointsLeft ? pathPointsLeft : pathPointsRight
-  return (
-    <div
-      className={`flex items-center gap-0.5 ${pointsLeft ? '' : 'flex-row-reverse'}`}
-    >
-      {Array.from({ length: count }, (_, i) => (
-        <svg key={i} width="14" height="10" viewBox="0 0 14 10" className="text-sky-400 shrink-0">
-          <path d={path} fill="currentColor" opacity={0.85} />
-        </svg>
-      ))}
+const pathPointsRight = 'M14 5L4 0v10l10-5z'
+const pathPointsLeft = 'M0 5l10 5V0L0 5z'
+
+const WindBar = ({
+  pointsLeft,
+  filledCount
+}: {
+  pointsLeft: boolean
+  filledCount: number
+}) => (
+  <>
+    <div className="flex items-center gap-0.5 flex-1 justify-end">
+      {Array.from({ length: WIND_SLOTS_PER_SIDE }, (_, i) => {
+        const filled = pointsLeft && i >= WIND_SLOTS_PER_SIDE - filledCount
+        return (
+          <svg
+            key={`l-${i}`}
+            width="12"
+            height="9"
+            viewBox="0 0 14 10"
+            className="shrink-0 text-sky-400"
+            aria-hidden
+          >
+            <path d={pathPointsLeft} fill="currentColor" opacity={filled ? 0.9 : 0.25} />
+          </svg>
+        )
+      })}
     </div>
-  )
-}
+    <div
+      className="shrink-0 w-px h-full bg-white/20 mx-0.5"
+      aria-hidden
+    />
+    <div className="flex items-center gap-0.5 flex-1 justify-start">
+      {Array.from({ length: WIND_SLOTS_PER_SIDE }, (_, i) => {
+        const filled = !pointsLeft && i < filledCount
+        return (
+          <svg
+            key={`r-${i}`}
+            width="12"
+            height="9"
+            viewBox="0 0 14 10"
+            className="shrink-0 text-sky-400"
+            aria-hidden
+          >
+            <path d={pathPointsRight} fill="currentColor" opacity={filled ? 0.9 : 0.25} />
+          </svg>
+        )
+      })}
+    </div>
+  </>
+)
 
 export const TankGameTopBar = ({
   player1Lives,
@@ -62,7 +98,7 @@ export const TankGameTopBar = ({
   currentTurn
 }: TankGameTopBarProps) => {
   const pointsLeft = windSpeed < 0
-  const triangleCount = getWindTriangleCount(windSpeed)
+  const filledSlots = getFilledSlotCount(windSpeed)
 
   const boxClass = 'rounded-lg border border-neutral-800 bg-neutral-900/80 px-3 py-2'
 
@@ -84,21 +120,10 @@ export const TankGameTopBar = ({
         />
       </div>
 
-      <div className={`flex flex-col gap-1.5 flex-1 min-w-0 mx-1 sm:mx-2 ${boxClass}`}>
+      <div className={`flex flex-col gap-1.5 shrink-0 w-[160px] sm:w-[180px] mx-1 sm:mx-2 ${boxClass}`}>
         <span className="text-xs uppercase text-neutral-500 text-center">wind</span>
-        <div className="relative h-5 w-full min-w-0 rounded-md border border-neutral-600 bg-neutral-800/60 overflow-hidden">
-          <div
-            className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-white/20"
-            aria-hidden
-          />
-          {triangleCount > 0 && (
-            <div
-              className="absolute top-1/2 -translate-y-1/2"
-              style={pointsLeft ? { right: '50%' } : { left: '50%' }}
-            >
-              <WindArrow pointsLeft={pointsLeft} count={triangleCount} />
-            </div>
-          )}
+        <div className="h-5 w-full rounded-md border border-neutral-600 bg-neutral-800/60 overflow-hidden flex items-center">
+          <WindBar pointsLeft={pointsLeft} filledCount={filledSlots} />
         </div>
       </div>
 

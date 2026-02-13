@@ -3,16 +3,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { TankLobby } from '@/app/games/_components/TankGame/TankLobby'
-import { TankHUD, RoomTurnBar, StatusMessage } from '@/app/games/_components/TankGame/TankHUD'
+import { RoomTurnBar, StatusMessage } from '@/app/games/_components/TankGame/TankHUD'
 import { TankControls } from '@/app/games/_components/TankGame/TankControls'
-import { useIsMobile } from '@/lib/hooks/use-mobile-device'
 import { TankCanvas } from '@/app/games/_components/TankGame/TankCanvas'
 import { TankGameTopBar } from '@/app/games/_components/TankGame/TankGameTopBar'
 import { TANK_GAME_CONFIG, AIM_CONFIG } from '@/app/games/_components/TankGame/tank.config'
 import { useTankMultiplayer } from '@/app/games/_components/TankGame/useTankMultiplayer'
 
 const TankGame = () => {
-  const isMobile = useIsMobile()
   const {
     game,
     playerNumber,
@@ -120,7 +118,7 @@ const TankGame = () => {
   )
 
   const controlsSection = (
-    <div className="w-full lg:w-[260px] flex flex-col gap-3 shrink-0">
+    <div className="w-full flex flex-col gap-2 shrink-0">
       <TankControls
         angle={angle}
         power={power}
@@ -136,7 +134,7 @@ const TankGame = () => {
           onClick={async () => {
             await startRematch()
           }}
-          className="rounded-lg border border-neutral-800 px-4 py-2 text-sm text-neutral-200 hover:border-neutral-600"
+          className="rounded-lg border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-600"
         >
           Start new battle
         </button>
@@ -144,49 +142,23 @@ const TankGame = () => {
     </div>
   )
 
-  if (isMobile) {
-    return (
-      <div className="flex flex-col items-center gap-3 w-full min-h-0 overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-3 w-full min-h-0"
-        >
-          <RoomTurnBar
-            playerNumber={playerNumber}
-            currentTurn={game.current_turn}
-            roomCode={roomCode}
-          />
-          <StatusMessage statusMessage={statusMessage} />
-          <div className="flex-1 min-h-[200px] flex flex-col">
-            {gameArea}
-          </div>
-          {controlsSection}
-        </motion.div>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex flex-col items-center gap-2 w-full min-h-0 flex-1 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col lg:flex-row gap-4 items-start w-full"
+        className="flex flex-col gap-2 w-full min-h-0 flex-1 max-w-[900px] overflow-hidden"
       >
-        <div className="w-full lg:w-auto relative rounded-xl overflow-hidden">
+        <RoomTurnBar
+          playerNumber={playerNumber}
+          currentTurn={game.current_turn}
+          roomCode={roomCode}
+        />
+        <StatusMessage statusMessage={statusMessage} />
+        <div className="flex-1 min-h-[200px] flex flex-col min-w-0">
           {gameArea}
         </div>
-
-        <div className="w-full lg:w-[260px] flex flex-col gap-3">
-          <TankHUD
-            playerNumber={playerNumber}
-            currentTurn={game.current_turn}
-            statusMessage={statusMessage}
-            roomCode={roomCode}
-          />
-          {controlsSection}
-        </div>
+        {controlsSection}
       </motion.div>
     </div>
   )

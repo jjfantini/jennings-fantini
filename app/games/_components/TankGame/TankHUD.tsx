@@ -11,15 +11,15 @@ export const RoomTurnBar = ({
   currentTurn,
   roomCode
 }: RoomTurnBarProps) => (
-  <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/80 px-3 py-2 text-sm text-neutral-200">
-    <div className="flex flex-col">
-      <span className="text-xs uppercase text-neutral-500">Room</span>
+  <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/80 px-2.5 py-1.5 text-xs text-neutral-200">
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-[10px] uppercase text-neutral-500">Room</span>
       <span className="font-semibold tracking-wide text-white">{roomCode || '------'}</span>
     </div>
-    <div className="flex flex-col text-right">
-      <span className="text-xs uppercase text-neutral-500">Turn</span>
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-[10px] uppercase text-neutral-500">Turn</span>
       <span className="font-semibold text-white">
-        Player {currentTurn} {playerNumber === currentTurn ? '(You)' : ''}
+        P{currentTurn} {playerNumber === currentTurn ? '(You)' : ''}
       </span>
     </div>
   </div>
@@ -30,7 +30,7 @@ type StatusMessageProps = {
 }
 
 export const StatusMessage = ({ statusMessage }: StatusMessageProps) => (
-  <div className="rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-neutral-300">
+  <div className="rounded-lg border border-neutral-800 bg-neutral-950 px-2.5 py-1.5 text-[11px] text-neutral-300">
     {statusMessage}
   </div>
 )

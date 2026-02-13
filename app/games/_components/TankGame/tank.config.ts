@@ -1,6 +1,6 @@
 export const TANK_GAME_CONFIG = {
   canvasWidth: 900,
-  canvasHeight: 520,
+  canvasHeight: 1000,
   terrainStep: 8,
   tankSize: { width: 30, height: 18 },
   projectileRadius: 4,
@@ -10,10 +10,7 @@ export const TANK_GAME_CONFIG = {
   maxSteps: 900,
   stepMs: 16,
   projectileFrictionAir: 0.0008,
-  windVelocityScale: 2,
-  windDragCoeff: 0.00015,
-  windDragQuadratic: 0.000012,
-  windMomentumRef: 8
+  windVelocityScale: 2
 } as const
 
 export const TANK_SPRITE = {

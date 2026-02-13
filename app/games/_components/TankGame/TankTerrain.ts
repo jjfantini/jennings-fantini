@@ -25,7 +25,7 @@ const hashSeed = (seed: string) => {
 
 export const createTerrain = ({ width, height, step, seed }: TerrainConfig): TerrainMap => {
   const random = mulberry32(hashSeed(seed))
-  const baseline = height * 0.68
+  const baseline = height * 0.90
   const amplitude1 = height * (0.08 + random() * 0.06)
   const amplitude2 = height * (0.04 + random() * 0.04)
   const amplitude3 = height * (0.02 + random() * 0.03)
@@ -45,7 +45,7 @@ export const createTerrain = ({ width, height, step, seed }: TerrainConfig): Ter
       Math.sin(x * freq1 + phase1) * amplitude1 +
       Math.sin(x * freq2 + phase2) * amplitude2 +
       Math.sin(x * freq3 + phase3) * amplitude3
-    const value = Math.min(height - 40, Math.max(height * 0.3, baseline + noise))
+    const value = Math.min(height - 40, Math.max(height * 0.65, baseline + noise))
     heights.push(value)
   }
 

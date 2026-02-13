@@ -84,6 +84,8 @@ export const useTankMultiplayer = () => {
   const previousGameRef = useRef<TankGameRow | null>(null)
   const lastFireRef = useRef<string | null>(null)
   const rematchSwitchRef = useRef<string | null>(null)
+  const playerNumberRef = useRef<1 | 2 | null>(playerNumber)
+  playerNumberRef.current = playerNumber
 
   useEffect(() => {
     setPlayerId(getOrCreatePlayerId())
@@ -128,10 +130,7 @@ export const useTankMultiplayer = () => {
                 maxSteps: TANK_GAME_CONFIG.maxSteps,
                 stepMs: TANK_GAME_CONFIG.stepMs,
                 projectileFrictionAir: TANK_GAME_CONFIG.projectileFrictionAir,
-                windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
-                windDragCoeff: TANK_GAME_CONFIG.windDragCoeff,
-                windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic,
-                windMomentumRef: TANK_GAME_CONFIG.windMomentumRef
+                windVelocityScale: TANK_GAME_CONFIG.windVelocityScale
               }
             })
             setShot(simulation)
@@ -145,12 +144,30 @@ export const useTankMultiplayer = () => {
                 terrain: updatedGame.terrain ?? previousGame.terrain,
                 tank1_position: updatedGame.tank1_position ?? previousGame.tank1_position,
                 tank2_position: updatedGame.tank2_position ?? previousGame.tank2_position,
-                last_action: updatedGame.last_action ?? previousGame.last_action
+                last_action: updatedGame.last_action ?? previousGame.last_action,
+                wind_speed: updatedGame.wind_speed ?? previousGame.wind_speed
               }
             : updatedGame
 
           previousGameRef.current = mergedGame
           setGame(mergedGame)
+
+          const isFireUpdate = lastAction.type === 'fire'
+          const turnNowMe = updatedGame.current_turn === playerNumberRef.current
+          if (isFireUpdate && turnNowMe) {
+            supabase
+              .from('tank_games')
+              .select('*')
+              .eq('id', updatedGame.id)
+              .single()
+              .then(({ data: fresh }) => {
+                if (fresh) {
+                  const row = fresh as TankGameRow
+                  previousGameRef.current = row
+                  setGame(row)
+                }
+              })
+          }
 
           if (
             updatedGame.id === game.id &&
@@ -502,10 +519,7 @@ export const useTankMultiplayer = () => {
         maxSteps: TANK_GAME_CONFIG.maxSteps,
         stepMs: TANK_GAME_CONFIG.stepMs,
         projectileFrictionAir: TANK_GAME_CONFIG.projectileFrictionAir,
-        windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
-        windDragCoeff: TANK_GAME_CONFIG.windDragCoeff,
-        windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic,
-        windMomentumRef: TANK_GAME_CONFIG.windMomentumRef
+        windVelocityScale: TANK_GAME_CONFIG.windVelocityScale
       }
     })
 
