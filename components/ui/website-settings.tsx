@@ -3,6 +3,7 @@
 import React from 'react'
 import { motion } from 'motion/react'
 import { ChevronDown, Settings2 } from 'lucide-react'
+import { useChasingLogo } from '@/components/providers/chasing-logo-provider'
 import { useNavbar } from '@/components/providers/navbar-provider'
 import { cn } from '@/lib/utils'
 
@@ -41,6 +42,7 @@ function Toggle({
 
 export function WebsiteSettings() {
   const { collapsed, setCollapsed } = useNavbar()
+  const { chasingLogoEnabled, setChasingLogoEnabled } = useChasingLogo()
   const [isExpanded, setIsExpanded] = React.useState(false)
 
   return (
@@ -82,6 +84,22 @@ export function WebsiteSettings() {
         >
           <div className="min-h-0 overflow-hidden">
             <div className="space-y-1 border-t border-neutral-200 p-4 dark:border-neutral-800">
+              <div className="flex items-stretch justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/50">
+                <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    Chasing Logo
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Show the profile image that follows your pointer
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center">
+                  <Toggle
+                    checked={chasingLogoEnabled}
+                    onChange={setChasingLogoEnabled}
+                  />
+                </div>
+              </div>
               <div className="flex items-stretch justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/50">
                 <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
                   <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">

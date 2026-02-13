@@ -1,13 +1,13 @@
 import { TerminalIntro } from "./_components/terminal-intro";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { RepellingText } from "./_components/repelling-title";
-import { ChasingLogo } from "./_components/chasing-logo";
+import { ChasingLogoGate } from "./_components/chasing-logo-gate";
 import { WebsiteSettings } from "@/components/ui/website-settings";
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ChasingLogo />
+      <ChasingLogoGate />
       <div className="flex flex-1 flex-col items-center justify-center p-4 gap-8">
         <span>
           <RepellingText 
