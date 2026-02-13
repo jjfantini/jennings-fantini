@@ -123,7 +123,9 @@ export const useTankMultiplayer = () => {
                 explosionRadius: TANK_GAME_CONFIG.explosionRadius,
                 tankSize: TANK_GAME_CONFIG.tankSize,
                 maxSteps: TANK_GAME_CONFIG.maxSteps,
-                stepMs: TANK_GAME_CONFIG.stepMs
+                stepMs: TANK_GAME_CONFIG.stepMs,
+                windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
+                windDragCoeff: TANK_GAME_CONFIG.windDragCoeff
               }
             })
             setShot(simulation)
@@ -489,7 +491,9 @@ export const useTankMultiplayer = () => {
         explosionRadius: TANK_GAME_CONFIG.explosionRadius,
         tankSize: TANK_GAME_CONFIG.tankSize,
         maxSteps: TANK_GAME_CONFIG.maxSteps,
-        stepMs: TANK_GAME_CONFIG.stepMs
+        stepMs: TANK_GAME_CONFIG.stepMs,
+        windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
+        windDragCoeff: TANK_GAME_CONFIG.windDragCoeff
       }
     })
 

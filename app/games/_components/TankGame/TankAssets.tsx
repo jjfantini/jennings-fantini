@@ -1,42 +1,86 @@
 import React from 'react'
+import { TANK_SPRITE, BLUE_BARREL, RED_BARREL } from '@/app/games/_components/TankGame/tank.config'
+
+const { width: SPRITE_WIDTH, height: SPRITE_HEIGHT } = TANK_SPRITE
+const BLUE_BARREL_LENGTH = BLUE_BARREL.turretMuzzle.x - BLUE_BARREL.barrelPivot.x
+const RED_BARREL_LENGTH = Math.abs(RED_BARREL.turretMuzzle.x - RED_BARREL.barrelPivot.x)
 
 type TankSpriteProps = {
   turretAngle: number
 }
 
-const turretStyle = (angle: number) => ({
-  transform: `rotate(${angle}deg)`,
-  transformOrigin: '24px 24px'
-})
+const BlueBarrelOverlay = ({ turretAngle }: TankSpriteProps) => {
+  const leftPercent = (BLUE_BARREL.barrelPivot.x / SPRITE_WIDTH) * 100
+  const topPercent = (BLUE_BARREL.barrelPivot.y / SPRITE_HEIGHT) * 100
+  const widthPercent = (BLUE_BARREL_LENGTH / SPRITE_WIDTH) * 100
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        left: `${leftPercent}%`,
+        top: `${topPercent}%`,
+        width: `${widthPercent}%`,
+        transformOrigin: '0 50%',
+        transform: `translateY(-50%) rotate(${turretAngle}deg)`,
+        transition: 'transform ease-out'
+      }}
+    >
+      <img
+        src="/tanks/blue-barrel.png"
+        alt=""
+        className="block w-full h-auto object-contain"
+        style={{ imageRendering: 'pixelated', objectPosition: 'left center' }}
+      />
+    </div>
+  )
+}
+
+const RedBarrelOverlay = ({ turretAngle }: TankSpriteProps) => {
+  const leftPercent = (RED_BARREL.turretMuzzle.x / SPRITE_WIDTH) * 100
+  const topPercent = (RED_BARREL.barrelPivot.y / SPRITE_HEIGHT) * 100
+  const widthPercent = (RED_BARREL_LENGTH / SPRITE_WIDTH) * 100
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        left: `${leftPercent}%`,
+        top: `${topPercent}%`,
+        width: `${widthPercent}%`,
+        transformOrigin: '100% 50%',
+        transform: `translateY(-50%) scaleX(-1) rotate(${turretAngle}deg)`,
+        transition: 'transform ease-out'
+      }}
+    >
+      <img
+        src="/tanks/red-barrel.png"
+        alt=""
+        className="block w-full h-auto object-contain"
+        style={{ imageRendering: 'pixelated', objectPosition: 'left center' }}
+      />
+    </div>
+  )
+}
 
 export const BlueTank = ({ turretAngle }: TankSpriteProps) => (
-  <svg width="64" height="48" viewBox="0 0 64 48" fill="none" aria-hidden>
-    <g>
-      <rect x="6" y="24" width="52" height="16" rx="4" fill="#1e3a8a" />
-      <rect x="12" y="18" width="40" height="10" rx="4" fill="#2563eb" />
-      <circle cx="20" cy="40" r="4" fill="#0f172a" />
-      <circle cx="32" cy="40" r="4" fill="#0f172a" />
-      <circle cx="44" cy="40" r="4" fill="#0f172a" />
-      <g style={turretStyle(turretAngle)}>
-        <rect x="26" y="20" width="14" height="6" rx="3" fill="#38bdf8" />
-        <rect x="36" y="21" width="16" height="4" rx="2" fill="#7dd3fc" />
-      </g>
-    </g>
-  </svg>
+  <div className="relative w-full h-full" style={{ imageRendering: 'pixelated' }}>
+    <img
+      src="/tanks/blue-tank.png"
+      alt=""
+      className="block w-full h-full object-fill"
+      style={{ imageRendering: 'pixelated' }}
+    />
+    <BlueBarrelOverlay turretAngle={turretAngle} />
+  </div>
 )
 
 export const RedTank = ({ turretAngle }: TankSpriteProps) => (
-  <svg width="64" height="48" viewBox="0 0 64 48" fill="none" aria-hidden>
-    <g>
-      <rect x="6" y="24" width="52" height="16" rx="4" fill="#7f1d1d" />
-      <rect x="12" y="18" width="40" height="10" rx="4" fill="#dc2626" />
-      <circle cx="20" cy="40" r="4" fill="#111827" />
-      <circle cx="32" cy="40" r="4" fill="#111827" />
-      <circle cx="44" cy="40" r="4" fill="#111827" />
-      <g style={turretStyle(turretAngle)}>
-        <rect x="26" y="20" width="14" height="6" rx="3" fill="#fb7185" />
-        <rect x="36" y="21" width="16" height="4" rx="2" fill="#fecdd3" />
-      </g>
-    </g>
-  </svg>
+  <div className="relative w-full h-full" style={{ imageRendering: 'pixelated' }}>
+    <img
+      src="/tanks/red-tank.png"
+      alt=""
+      className="block w-full h-full object-fill"
+      style={{ imageRendering: 'pixelated' }}
+    />
+    <RedBarrelOverlay turretAngle={turretAngle} />
+  </div>
 )

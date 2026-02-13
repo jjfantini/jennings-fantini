@@ -6,6 +6,7 @@ import {
   getTerrainAngle,
   getTerrainY
 } from '@/app/games/_components/TankGame/TankTerrain'
+import { TANK_SPRITE, BLUE_BARREL, RED_BARREL } from '@/app/games/_components/TankGame/tank.config'
 
 type SimulationConfig = {
   gravity: number
@@ -15,6 +16,8 @@ type SimulationConfig = {
   tankSize: { width: number; height: number }
   maxSteps: number
   stepMs: number
+  windVelocityScale: number
+  windDragCoeff: number
 }
 
 type SimulationInput = {
@@ -49,13 +52,7 @@ const buildTerrainBodies = (terrain: TerrainMap) => {
 
 const toRadians = (deg: number) => (deg * Math.PI) / 180
 
-const tankSprite = {
-  width: 64,
-  height: 48,
-  bodyPivot: { x: 32, y: 48 },
-  turretPivot: { x: 24, y: 24 },
-  turretMuzzle: { x: 52, y: 23 }
-}
+const tankSprite = TANK_SPRITE
 
 const rotateVector = (vector: TankVector, angleRad: number) => {
   const cos = Math.cos(angleRad)
@@ -77,13 +74,19 @@ const getTurretRotationRad = (aimAngleDeg: number, bodyAngleRad: number) => {
   return screenAimRad - bodyAngleRad
 }
 
-const getTankMuzzlePosition = (tank: TankState, aimAngleDeg: number, bodyAngleRad: number) => {
+const getTankMuzzlePosition = (
+  tank: TankState,
+  aimAngleDeg: number,
+  bodyAngleRad: number,
+  firingPlayer: 1 | 2
+) => {
+  const barrel = firingPlayer === 1 ? BLUE_BARREL : RED_BARREL
   const turretRotationRad = getTurretRotationRad(aimAngleDeg, bodyAngleRad)
   const topLeft = {
     x: tank.position.x - tankSprite.width / 2,
     y: tank.position.y - tankSprite.height / 2
   }
-  const muzzleAfterTurret = rotatePointAround(tankSprite.turretMuzzle, tankSprite.turretPivot, turretRotationRad)
+  const muzzleAfterTurret = rotatePointAround(barrel.turretMuzzle, barrel.barrelPivot, turretRotationRad)
   const muzzleAfterBody = rotatePointAround(muzzleAfterTurret, tankSprite.bodyPivot, bodyAngleRad)
   return { x: topLeft.x + muzzleAfterBody.x, y: topLeft.y + muzzleAfterBody.y }
 }
@@ -121,7 +124,7 @@ export const simulateShot = ({
 
   const firingTank = firingPlayer === 1 ? tank1 : tank2
   const bodyAngleRad = getTerrainAngle(terrain, firingTank.position.x)
-  const muzzle = getTankMuzzlePosition(firingTank, angleDeg, bodyAngleRad)
+  const muzzle = getTankMuzzlePosition(firingTank, angleDeg, bodyAngleRad, firingPlayer)
   const angle = toRadians(angleDeg)
   const launchX = muzzle.x
   const launchY = muzzle.y
@@ -146,6 +149,12 @@ export const simulateShot = ({
 
   for (let step = 0; step < config.maxSteps; step += 1) {
     Matter.Engine.update(engine, config.stepMs)
+    if (windSpeed !== 0) {
+      const vWind = windSpeed * config.windVelocityScale
+      const vRel = vWind - projectile.velocity.x
+      const forceX = config.windDragCoeff * vRel * (projectile.mass ?? 1)
+      Matter.Body.applyForce(projectile, projectile.position, { x: forceX, y: 0 })
+    }
     path.push({ x: projectile.position.x, y: projectile.position.y })
 
     if (

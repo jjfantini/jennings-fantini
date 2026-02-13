@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { BlueTank, RedTank } from '@/app/games/_components/TankGame/TankAssets'
 import { buildTerrainPath, getTerrainAngle } from '@/app/games/_components/TankGame/TankTerrain'
 import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
-import { TANK_GAME_CONFIG } from '@/app/games/_components/TankGame/tank.config'
+import { TANK_GAME_CONFIG, TANK_SPRITE, BLUE_BARREL, RED_BARREL } from '@/app/games/_components/TankGame/tank.config'
 
 type TankCanvasProps = {
   width: number
@@ -29,13 +29,7 @@ type ShotAnimation = {
   fallsTriggered: boolean
 }
 
-const tankSprite = {
-  width: 64,
-  height: 48,
-  bodyPivot: { x: 32, y: 48 },
-  turretPivot: { x: 24, y: 24 },
-  turretMuzzle: { x: 52, y: 23 }
-}
+const tankSprite = TANK_SPRITE
 
 const degreesToRadians = (deg: number) => (deg * Math.PI) / 180
 const radiansToDegrees = (rad: number) => (rad * 180) / Math.PI
@@ -60,18 +54,26 @@ const getTurretRotationDeg = (aimAngleDeg: number, bodyAngleRad: number) => {
   return radiansToDegrees(screenAimRad - bodyAngleRad)
 }
 
-const getAimLine = (tank: TankState, aimAngleDeg: number, power: number, bodyAngleRad: number) => {
+type BarrelConfig = { barrelPivot: { x: number; y: number }; turretMuzzle: { x: number; y: number } }
+
+const getAimLine = (
+  tank: TankState,
+  aimAngleDeg: number,
+  power: number,
+  bodyAngleRad: number,
+  barrel: BarrelConfig
+) => {
   const turretRotationRad = degreesToRadians(getTurretRotationDeg(aimAngleDeg, bodyAngleRad))
   const topLeft = {
     x: tank.position.x - tankSprite.width / 2,
     y: tank.position.y - tankSprite.height / 2
   }
-  const muzzleAfterTurret = rotatePointAround(tankSprite.turretMuzzle, tankSprite.turretPivot, turretRotationRad)
+  const muzzleAfterTurret = rotatePointAround(barrel.turretMuzzle, barrel.barrelPivot, turretRotationRad)
   const muzzleAfterBody = rotatePointAround(muzzleAfterTurret, tankSprite.bodyPivot, bodyAngleRad)
   const muzzleWorld = { x: topLeft.x + muzzleAfterBody.x, y: topLeft.y + muzzleAfterBody.y }
   const barrelVector = {
-    x: tankSprite.turretMuzzle.x - tankSprite.turretPivot.x,
-    y: tankSprite.turretMuzzle.y - tankSprite.turretPivot.y
+    x: barrel.turretMuzzle.x - barrel.barrelPivot.x,
+    y: barrel.turretMuzzle.y - barrel.barrelPivot.y
   }
   const barrelAfterTurret = rotateVector(barrelVector, turretRotationRad)
   const barrelAfterBody = rotateVector(barrelAfterTurret, bodyAngleRad)
@@ -110,8 +112,12 @@ export const TankCanvas = ({
   })
   const tank1BodyAngle = getTerrainAngle(visualTerrain, visualTank1.position.x)
   const tank2BodyAngle = getTerrainAngle(visualTerrain, visualTank2.position.x)
-  const tank1TurretAngle = getTurretRotationDeg(visualTank1.angle, tank1BodyAngle)
-  const tank2TurretAngle = getTurretRotationDeg(visualTank2.angle, tank2BodyAngle)
+  const tank1DisplayAngle =
+    localPlayer === 1 && localAim ? localAim.angle : localPlayer === 2 && opponentAim ? opponentAim.angle : visualTank1.angle
+  const tank2DisplayAngle =
+    localPlayer === 2 && localAim ? localAim.angle : localPlayer === 1 && opponentAim ? opponentAim.angle : visualTank2.angle
+  const tank1TurretAngle = getTurretRotationDeg(tank1DisplayAngle, tank1BodyAngle)
+  const tank2TurretAngle = getTurretRotationDeg(tank2DisplayAngle, tank2BodyAngle)
 
   useEffect(() => {
     if (!shot?.path?.length) {
@@ -205,7 +211,8 @@ export const TankCanvas = ({
           { ...activeTank, angle: localAim.angle, power: localAim.power },
           localAim.angle,
           localAim.power,
-          activeBodyAngle
+          activeBodyAngle,
+          localPlayer === 1 ? BLUE_BARREL : RED_BARREL
         )
         ctx.strokeStyle = '#a5b4fc'
         ctx.setLineDash([6, 6])
@@ -228,7 +235,8 @@ export const TankCanvas = ({
           { ...opponentTank, angle: opponentAim.angle, power: opponentAim.power },
           opponentAim.angle,
           opponentAim.power,
-          opponentBodyAngle
+          opponentBodyAngle,
+          localPlayer === 1 ? RED_BARREL : BLUE_BARREL
         )
         ctx.strokeStyle = '#fda4af'
         ctx.setLineDash([4, 8])
@@ -317,10 +325,12 @@ export const TankCanvas = ({
 
       <div className="absolute left-0 top-0 h-full w-full pointer-events-none">
         <div
-          className="absolute"
+          className="absolute overflow-hidden"
           style={{
             left: visualTank1.position.x - tankSprite.width / 2,
             top: visualTank1.position.y - tankSprite.height / 2,
+            width: tankSprite.width,
+            height: tankSprite.height,
             transform: `rotate(${tank1BodyAngle}rad)`,
             transformOrigin: '50% 100%',
             transition:
@@ -332,10 +342,12 @@ export const TankCanvas = ({
           <BlueTank turretAngle={tank1TurretAngle} />
         </div>
         <div
-          className="absolute"
+          className="absolute overflow-hidden"
           style={{
             left: visualTank2.position.x - tankSprite.width / 2,
             top: visualTank2.position.y - tankSprite.height / 2,
+            width: tankSprite.width,
+            height: tankSprite.height,
             transform: `rotate(${tank2BodyAngle}rad)`,
             transformOrigin: '50% 100%',
             transition:
