@@ -109,7 +109,7 @@ const TankGame = () => {
         localPlayer={playerNumber}
       />
 
-      {game.status === 'finished' && (
+      {game.status === 'finished' && !shot && (
         <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/70">
           <div className="rounded-xl border border-neutral-700 bg-neutral-900/90 px-6 py-4 text-center shadow-xl">
             <p className="text-sm uppercase tracking-wide text-neutral-400">Battle complete</p>
@@ -133,7 +133,7 @@ const TankGame = () => {
         disabled={!isMyTurn || !isReady}
       />
 
-      {game.status === 'finished' && (
+      {game.status === 'finished' && !shot && (
         <button
           type="button"
           onClick={async () => {
