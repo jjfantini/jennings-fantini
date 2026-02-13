@@ -141,6 +141,7 @@ export const TankCanvas = ({
 
   useEffect(() => {
     if (!shot?.path?.length) {
+      shotRef.current = null
       return
     }
     const { tank1: tank1Snapshot, tank2: tank2Snapshot } = tankSnapshotRef.current
