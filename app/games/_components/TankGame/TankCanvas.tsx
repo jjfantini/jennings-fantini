@@ -368,17 +368,17 @@ export const TankCanvas = ({
   }, [height, localAim, opponentAim, width, tank1, tank2, localPlayer, terrain])
 
   return (
-    <div className="relative" style={{ width, height }}>
-      <canvas ref={canvasRef} width={width} height={height} className="block" />
+    <div className="relative w-full max-w-[900px] mx-auto" style={{ aspectRatio: `${width}/${height}` }}>
+      <canvas ref={canvasRef} width={width} height={height} className="block w-full h-full" />
 
-      <div className="absolute left-0 top-0 h-full w-full pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none">
         <div
           className="absolute overflow-hidden"
           style={{
-            left: visualTank1.position.x - tankSprite.width / 2,
-            top: visualTank1.position.y - tankSprite.height / 2,
-            width: tankSprite.width,
-            height: tankSprite.height,
+            left: `${((visualTank1.position.x - tankSprite.width / 2) / width) * 100}%`,
+            top: `${((visualTank1.position.y - tankSprite.height / 2) / height) * 100}%`,
+            width: `${(tankSprite.width / width) * 100}%`,
+            height: `${(tankSprite.height / height) * 100}%`,
             transform: `rotate(${tank1BodyAngle}rad)`,
             transformOrigin: '50% 100%',
             transition:
@@ -392,10 +392,10 @@ export const TankCanvas = ({
         <div
           className="absolute overflow-hidden"
           style={{
-            left: visualTank2.position.x - tankSprite.width / 2,
-            top: visualTank2.position.y - tankSprite.height / 2,
-            width: tankSprite.width,
-            height: tankSprite.height,
+            left: `${((visualTank2.position.x - tankSprite.width / 2) / width) * 100}%`,
+            top: `${((visualTank2.position.y - tankSprite.height / 2) / height) * 100}%`,
+            width: `${(tankSprite.width / width) * 100}%`,
+            height: `${(tankSprite.height / height) * 100}%`,
             transform: `rotate(${tank2BodyAngle}rad)`,
             transformOrigin: '50% 100%',
             transition:

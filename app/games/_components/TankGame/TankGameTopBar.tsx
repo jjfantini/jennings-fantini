@@ -67,8 +67,8 @@ export const TankGameTopBar = ({
   const boxClass = 'rounded-lg border border-neutral-800 bg-neutral-900/80 px-3 py-2'
 
   return (
-    <div className="flex items-center justify-between gap-3 w-full">
-      <div className={`flex flex-col gap-1.5 min-w-[80px] ${boxClass}`}>
+    <div className="flex items-center justify-between gap-2 sm:gap-3 w-full min-w-0">
+      <div className={`flex flex-col gap-1.5 min-w-[56px] sm:min-w-[80px] shrink-0 ${boxClass}`}>
         <div className="flex items-center gap-2">
           {currentTurn === 1 && (
             <span className="text-emerald-400 text-xs" aria-hidden>
@@ -84,9 +84,9 @@ export const TankGameTopBar = ({
         />
       </div>
 
-      <div className={`flex flex-col gap-1.5 w-[240px] shrink-0 mx-2 ${boxClass}`}>
+      <div className={`flex flex-col gap-1.5 flex-1 min-w-0 mx-1 sm:mx-2 ${boxClass}`}>
         <span className="text-xs uppercase text-neutral-500 text-center">wind</span>
-        <div className="relative h-5 w-full min-w-[130px] rounded-md border border-neutral-600 bg-neutral-800/60 overflow-hidden">
+        <div className="relative h-5 w-full min-w-0 rounded-md border border-neutral-600 bg-neutral-800/60 overflow-hidden">
           <div
             className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-white/20"
             aria-hidden
@@ -102,7 +102,7 @@ export const TankGameTopBar = ({
         </div>
       </div>
 
-      <div className={`flex flex-col gap-1.5 min-w-[80px] items-end ${boxClass}`}>
+      <div className={`flex flex-col gap-1.5 min-w-[56px] sm:min-w-[80px] shrink-0 items-end ${boxClass}`}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-rose-200">P2</span>
           {currentTurn === 2 && (
