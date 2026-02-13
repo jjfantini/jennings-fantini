@@ -47,7 +47,7 @@ const RedBarrelOverlay = ({ turretAngle }: TankSpriteProps) => {
         top: `${topPercent}%`,
         width: `${widthPercent}%`,
         transformOrigin: '100% 50%',
-        transform: `translateY(-50%) scaleX(-1) rotate(${turretAngle}deg)`,
+        transform: `translateY(-50%) rotate(${turretAngle}deg)`,
         transition: 'transform ease-out'
       }}
     >
@@ -55,7 +55,7 @@ const RedBarrelOverlay = ({ turretAngle }: TankSpriteProps) => {
         src="/tanks/red-barrel.png"
         alt=""
         className="block w-full h-auto object-contain"
-        style={{ imageRendering: 'pixelated', objectPosition: 'left center' }}
+        style={{ imageRendering: 'pixelated', objectPosition: 'right center' }}
       />
     </div>
   )

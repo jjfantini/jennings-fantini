@@ -1,4 +1,5 @@
 import React from 'react'
+import { AIM_CONFIG } from '@/app/games/_components/TankGame/tank.config'
 
 type TankControlsProps = {
   angle: number
@@ -23,8 +24,8 @@ export const TankControls = ({
         <span className="text-xs uppercase tracking-wide text-neutral-400">Angle</span>
         <input
           type="range"
-          min={5}
-          max={175}
+          min={AIM_CONFIG.min}
+          max={AIM_CONFIG.max}
           value={angle}
           onChange={(event) => onAngleChange(Number(event.target.value))}
           disabled={disabled}

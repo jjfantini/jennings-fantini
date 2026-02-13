@@ -2,8 +2,6 @@ import React from 'react'
 
 type TankHUDProps = {
   playerNumber: 1 | 2 | null
-  player1Lives: number
-  player2Lives: number
   currentTurn: 1 | 2
   statusMessage: string
   roomCode: string
@@ -11,8 +9,6 @@ type TankHUDProps = {
 
 export const TankHUD = ({
   playerNumber,
-  player1Lives,
-  player2Lives,
   currentTurn,
   statusMessage,
   roomCode
@@ -28,17 +24,6 @@ export const TankHUD = ({
         <span className="font-semibold text-white">
           Player {currentTurn} {playerNumber === currentTurn ? '(You)' : ''}
         </span>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-2">
-      <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2">
-        <p className="text-xs uppercase text-blue-200">Player 1</p>
-        <p className="text-lg font-bold text-white">{player1Lives} lives</p>
-      </div>
-      <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2">
-        <p className="text-xs uppercase text-rose-200">Player 2</p>
-        <p className="text-lg font-bold text-white">{player2Lives} lives</p>
       </div>
     </div>
 

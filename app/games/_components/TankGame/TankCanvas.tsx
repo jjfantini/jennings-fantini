@@ -3,6 +3,7 @@ import { BlueTank, RedTank } from '@/app/games/_components/TankGame/TankAssets'
 import { buildTerrainPath, getTerrainAngle } from '@/app/games/_components/TankGame/TankTerrain'
 import type { ShotResult, TankState, TankVector, TerrainMap } from '@/app/games/_components/TankGame/tank.types'
 import { TANK_GAME_CONFIG, TANK_SPRITE, BLUE_BARREL, RED_BARREL } from '@/app/games/_components/TankGame/tank.config'
+import { relativeToScreenAngle } from '@/app/games/_components/TankGame/TankPhysics'
 
 type TankCanvasProps = {
   width: number
@@ -49,9 +50,10 @@ const rotatePointAround = (point: TankVector, origin: TankVector, angleRad: numb
   return { x: origin.x + rotated.x, y: origin.y + rotated.y }
 }
 
-const getTurretRotationDeg = (aimAngleDeg: number, bodyAngleRad: number) => {
+const getTurretRotationDeg = (aimAngleDeg: number, bodyAngleRad: number, player: 1 | 2) => {
   const screenAimRad = -degreesToRadians(aimAngleDeg)
-  return radiansToDegrees(screenAimRad - bodyAngleRad)
+  const base = screenAimRad - bodyAngleRad
+  return radiansToDegrees(player === 2 ? base + Math.PI : base)
 }
 
 type BarrelConfig = { barrelPivot: { x: number; y: number }; turretMuzzle: { x: number; y: number } }
@@ -61,9 +63,10 @@ const getAimLine = (
   aimAngleDeg: number,
   power: number,
   bodyAngleRad: number,
-  barrel: BarrelConfig
+  barrel: BarrelConfig,
+  player: 1 | 2
 ) => {
-  const turretRotationRad = degreesToRadians(getTurretRotationDeg(aimAngleDeg, bodyAngleRad))
+  const turretRotationRad = degreesToRadians(getTurretRotationDeg(aimAngleDeg, bodyAngleRad, player))
   const topLeft = {
     x: tank.position.x - tankSprite.width / 2,
     y: tank.position.y - tankSprite.height / 2
@@ -116,8 +119,8 @@ export const TankCanvas = ({
     localPlayer === 1 && localAim ? localAim.angle : localPlayer === 2 && opponentAim ? opponentAim.angle : visualTank1.angle
   const tank2DisplayAngle =
     localPlayer === 2 && localAim ? localAim.angle : localPlayer === 1 && opponentAim ? opponentAim.angle : visualTank2.angle
-  const tank1TurretAngle = getTurretRotationDeg(tank1DisplayAngle, tank1BodyAngle)
-  const tank2TurretAngle = getTurretRotationDeg(tank2DisplayAngle, tank2BodyAngle)
+  const tank1TurretAngle = getTurretRotationDeg(relativeToScreenAngle(tank1DisplayAngle, 1), tank1BodyAngle, 1)
+  const tank2TurretAngle = getTurretRotationDeg(relativeToScreenAngle(tank2DisplayAngle, 2), tank2BodyAngle, 2)
 
   useEffect(() => {
     if (!shot?.path?.length) {
@@ -209,10 +212,11 @@ export const TankCanvas = ({
         const activeBodyAngle = localPlayer === 1 ? tank1BodyAngle : tank2BodyAngle
         const points = getAimLine(
           { ...activeTank, angle: localAim.angle, power: localAim.power },
-          localAim.angle,
+          relativeToScreenAngle(localAim.angle, localPlayer),
           localAim.power,
           activeBodyAngle,
-          localPlayer === 1 ? BLUE_BARREL : RED_BARREL
+          localPlayer === 1 ? BLUE_BARREL : RED_BARREL,
+          localPlayer
         )
         ctx.strokeStyle = '#a5b4fc'
         ctx.setLineDash([6, 6])
@@ -231,12 +235,14 @@ export const TankCanvas = ({
       if (opponentAim && localPlayer) {
         const opponentTank = localPlayer === 1 ? visualTank2 : visualTank1
         const opponentBodyAngle = localPlayer === 1 ? tank2BodyAngle : tank1BodyAngle
+        const opponentPlayer = localPlayer === 1 ? 2 : 1
         const points = getAimLine(
           { ...opponentTank, angle: opponentAim.angle, power: opponentAim.power },
-          opponentAim.angle,
+          relativeToScreenAngle(opponentAim.angle, opponentPlayer),
           opponentAim.power,
           opponentBodyAngle,
-          localPlayer === 1 ? RED_BARREL : BLUE_BARREL
+          localPlayer === 1 ? RED_BARREL : BLUE_BARREL,
+          opponentPlayer
         )
         ctx.strokeStyle = '#fda4af'
         ctx.setLineDash([4, 8])

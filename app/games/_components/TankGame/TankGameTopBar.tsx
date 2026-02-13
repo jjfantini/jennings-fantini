@@ -32,6 +32,7 @@ const LivesBar = ({
 
 const getWindTriangleCount = (windSpeed: number) => {
   const abs = Math.abs(windSpeed)
+  if (abs < 0.05) return 0
   if (abs < 0.15) return 1
   if (abs < 0.3) return 2
   if (abs < 0.45) return 3
@@ -64,7 +65,7 @@ export const TankGameTopBar = ({
   windSpeed,
   currentTurn
 }: TankGameTopBarProps) => {
-  const pointsLeft = windSpeed > 0
+  const pointsLeft = windSpeed < 0
   const triangleCount = getWindTriangleCount(windSpeed)
 
   return (
@@ -89,15 +90,17 @@ export const TankGameTopBar = ({
         <span className="text-xs uppercase text-neutral-500 text-center">wind</span>
         <div className="relative h-5 rounded-md border border-neutral-600 bg-neutral-800/60">
           <div
-            className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-neutral-600/40"
+            className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-white/20"
             aria-hidden
           />
-          <div
-            className="absolute top-1/2 -translate-y-1/2"
-            style={pointsLeft ? { left: '50%' } : { right: '50%' }}
-          >
-            <WindArrow pointsLeft={pointsLeft} count={triangleCount} />
-          </div>
+          {triangleCount > 0 && (
+            <div
+              className="absolute top-1/2 -translate-y-1/2"
+              style={pointsLeft ? { left: '50%' } : { right: '50%' }}
+            >
+              <WindArrow pointsLeft={pointsLeft} count={triangleCount} />
+            </div>
+          )}
         </div>
       </div>
 

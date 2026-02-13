@@ -28,6 +28,7 @@ export type TankGameRow = {
   current_turn: 1 | 2
   player1_lives: number
   player2_lives: number
+  wind_speed?: number
   terrain: TerrainMap
   tank1_position: TankState
   tank2_position: TankState

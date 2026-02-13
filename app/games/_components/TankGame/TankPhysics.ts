@@ -6,7 +6,7 @@ import {
   getTerrainAngle,
   getTerrainY
 } from '@/app/games/_components/TankGame/TankTerrain'
-import { TANK_SPRITE, BLUE_BARREL, RED_BARREL } from '@/app/games/_components/TankGame/tank.config'
+import { TANK_SPRITE, BLUE_BARREL, RED_BARREL, AIM_CONFIG } from '@/app/games/_components/TankGame/tank.config'
 
 type SimulationConfig = {
   gravity: number
@@ -18,6 +18,7 @@ type SimulationConfig = {
   stepMs: number
   windVelocityScale: number
   windDragCoeff: number
+  windDragQuadratic: number
 }
 
 type SimulationInput = {
@@ -30,6 +31,7 @@ type SimulationInput = {
   player1Lives: number
   player2Lives: number
   config: SimulationConfig
+  windSpeed?: number
 }
 
 const buildTerrainBodies = (terrain: TerrainMap) => {
@@ -54,6 +56,12 @@ const toRadians = (deg: number) => (deg * Math.PI) / 180
 
 const tankSprite = TANK_SPRITE
 
+export const relativeToScreenAngle = (relativeAngle: number, player: 1 | 2): number =>
+  player === 1 ? relativeAngle : 180 - relativeAngle
+
+export const screenToRelativeAngle = (screenAngle: number, player: 1 | 2): number =>
+  player === 1 ? screenAngle : 180 - screenAngle
+
 const rotateVector = (vector: TankVector, angleRad: number) => {
   const cos = Math.cos(angleRad)
   const sin = Math.sin(angleRad)
@@ -69,9 +77,10 @@ const rotatePointAround = (point: TankVector, origin: TankVector, angleRad: numb
   return { x: origin.x + rotated.x, y: origin.y + rotated.y }
 }
 
-const getTurretRotationRad = (aimAngleDeg: number, bodyAngleRad: number) => {
+const getTurretRotationRad = (aimAngleDeg: number, bodyAngleRad: number, player: 1 | 2) => {
   const screenAimRad = -toRadians(aimAngleDeg)
-  return screenAimRad - bodyAngleRad
+  const base = screenAimRad - bodyAngleRad
+  return player === 2 ? base + Math.PI : base
 }
 
 const getTankMuzzlePosition = (
@@ -81,7 +90,7 @@ const getTankMuzzlePosition = (
   firingPlayer: 1 | 2
 ) => {
   const barrel = firingPlayer === 1 ? BLUE_BARREL : RED_BARREL
-  const turretRotationRad = getTurretRotationRad(aimAngleDeg, bodyAngleRad)
+  const turretRotationRad = getTurretRotationRad(aimAngleDeg, bodyAngleRad, firingPlayer)
   const topLeft = {
     x: tank.position.x - tankSprite.width / 2,
     y: tank.position.y - tankSprite.height / 2
@@ -100,7 +109,8 @@ export const simulateShot = ({
   power,
   player1Lives: currentPlayer1Lives,
   player2Lives: currentPlayer2Lives,
-  config
+  config,
+  windSpeed = 0
 }: SimulationInput): ShotResult => {
   const engine = Matter.Engine.create()
   engine.gravity.y = config.gravity
@@ -124,8 +134,9 @@ export const simulateShot = ({
 
   const firingTank = firingPlayer === 1 ? tank1 : tank2
   const bodyAngleRad = getTerrainAngle(terrain, firingTank.position.x)
-  const muzzle = getTankMuzzlePosition(firingTank, angleDeg, bodyAngleRad, firingPlayer)
-  const angle = toRadians(angleDeg)
+  const screenAngleDeg = relativeToScreenAngle(angleDeg, firingPlayer)
+  const muzzle = getTankMuzzlePosition(firingTank, screenAngleDeg, bodyAngleRad, firingPlayer)
+  const angle = toRadians(screenAngleDeg)
   const launchX = muzzle.x
   const launchY = muzzle.y
 
@@ -152,7 +163,17 @@ export const simulateShot = ({
     if (windSpeed !== 0) {
       const vWind = windSpeed * config.windVelocityScale
       const vRel = vWind - projectile.velocity.x
-      const forceX = config.windDragCoeff * vRel * (projectile.mass ?? 1)
+      const mass = projectile.mass ?? 1
+      const linearDrag = config.windDragCoeff * vRel * mass
+      const quadraticDrag = config.windDragQuadratic * vRel * Math.abs(vRel) * mass
+      let forceX = linearDrag + quadraticDrag
+      const dt = config.stepMs / 1000
+      const vx = projectile.velocity.x
+      if (vx > 0 && forceX < -vx * mass / dt) {
+        forceX = -vx * mass / dt
+      } else if (vx < 0 && forceX > -vx * mass / dt) {
+        forceX = -vx * mass / dt
+      }
       Matter.Body.applyForce(projectile, projectile.position, { x: forceX, y: 0 })
     }
     path.push({ x: projectile.position.x, y: projectile.position.y })
@@ -215,7 +236,8 @@ export const simulateShot = ({
   }
 }
 
-export const clampAimAngle = (angle: number) => Math.max(5, Math.min(175, angle))
+export const clampAimAngle = (angle: number, _player: 1 | 2) =>
+  Math.max(AIM_CONFIG.min, Math.min(AIM_CONFIG.max, angle))
 
 export const clampPower = (power: number) => Math.max(10, Math.min(100, power))
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/app/games/_lib/supabase'
-import { TANK_GAME_CONFIG } from '@/app/games/_components/TankGame/tank.config'
+import { TANK_GAME_CONFIG, AIM_CONFIG } from '@/app/games/_components/TankGame/tank.config'
 import { createTerrain, getTankRestingPosition } from '@/app/games/_components/TankGame/TankTerrain'
 import { simulateShot } from '@/app/games/_components/TankGame/TankPhysics'
 import type { ShotResult, TankGameRow, TankLastAction, TankState } from '@/app/games/_components/TankGame/tank.types'
@@ -62,12 +62,14 @@ const generateRoomCode = () => {
   return code
 }
 
+const generateWindSpeed = () => (Math.random() * 2 - 1) * 0.6
+
 const buildInitialTankState = (terrain: ReturnType<typeof createTerrain>, side: 'left' | 'right'): TankState => {
   const x = side === 'left' ? terrain.width * 0.2 : terrain.width * 0.8
   const position = getTankRestingPosition(terrain, x, TANK_GAME_CONFIG.tankSize)
   return {
     position,
-    angle: side === 'left' ? 45 : 135,
+    angle: AIM_CONFIG.default,
     power: 60
   }
 }
@@ -116,6 +118,7 @@ export const useTankMultiplayer = () => {
               power: lastAction.power,
               player1Lives: previousGame.player1_lives,
               player2Lives: previousGame.player2_lives,
+              windSpeed: previousGame.wind_speed ?? 0,
               config: {
                 gravity: TANK_GAME_CONFIG.gravity,
                 powerScale: TANK_GAME_CONFIG.powerScale,
@@ -125,7 +128,8 @@ export const useTankMultiplayer = () => {
                 maxSteps: TANK_GAME_CONFIG.maxSteps,
                 stepMs: TANK_GAME_CONFIG.stepMs,
                 windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
-                windDragCoeff: TANK_GAME_CONFIG.windDragCoeff
+                windDragCoeff: TANK_GAME_CONFIG.windDragCoeff,
+                windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic
               }
             })
             setShot(simulation)
@@ -212,6 +216,7 @@ export const useTankMultiplayer = () => {
           current_turn: 1,
           player1_lives: 3,
           player2_lives: 3,
+          wind_speed: generateWindSpeed(),
           terrain,
           tank1_position: tank1,
           tank2_position: tank2,
@@ -341,6 +346,7 @@ export const useTankMultiplayer = () => {
           current_turn: 1,
           player1_lives: 3,
           player2_lives: 3,
+          wind_speed: generateWindSpeed(),
           terrain,
           tank1_position: tank1,
           tank2_position: tank2,
@@ -484,6 +490,7 @@ export const useTankMultiplayer = () => {
       power: firingTank.power,
       player1Lives: game.player1_lives,
       player2Lives: game.player2_lives,
+      windSpeed: game.wind_speed ?? 0,
       config: {
         gravity: TANK_GAME_CONFIG.gravity,
         powerScale: TANK_GAME_CONFIG.powerScale,
@@ -493,7 +500,8 @@ export const useTankMultiplayer = () => {
         maxSteps: TANK_GAME_CONFIG.maxSteps,
         stepMs: TANK_GAME_CONFIG.stepMs,
         windVelocityScale: TANK_GAME_CONFIG.windVelocityScale,
-        windDragCoeff: TANK_GAME_CONFIG.windDragCoeff
+        windDragCoeff: TANK_GAME_CONFIG.windDragCoeff,
+        windDragQuadratic: TANK_GAME_CONFIG.windDragQuadratic
       }
     })
 

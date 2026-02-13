@@ -9,8 +9,9 @@ export const TANK_GAME_CONFIG = {
   powerScale: 0.12,
   maxSteps: 600,
   stepMs: 16,
-  windVelocityScale: 10,
-  windDragCoeff: 0.003
+  windVelocityScale: 6,
+  windDragCoeff: 0.001,
+  windDragQuadratic: 0.00015
 } as const
 
 export const TANK_SPRITE = {
@@ -27,4 +28,10 @@ export const BLUE_BARREL = {
 export const RED_BARREL = {
   barrelPivot: { x: 14, y: 8 },
   turretMuzzle: { x: 3, y: 8 }
+} as const
+
+export const AIM_CONFIG = {
+  min: -10,
+  max: 90,
+  default: 45
 } as const

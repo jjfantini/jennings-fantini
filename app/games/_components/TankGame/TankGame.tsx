@@ -6,7 +6,8 @@ import { TankLobby } from '@/app/games/_components/TankGame/TankLobby'
 import { TankHUD } from '@/app/games/_components/TankGame/TankHUD'
 import { TankControls } from '@/app/games/_components/TankGame/TankControls'
 import { TankCanvas } from '@/app/games/_components/TankGame/TankCanvas'
-import { TANK_GAME_CONFIG } from '@/app/games/_components/TankGame/tank.config'
+import { TankGameTopBar } from '@/app/games/_components/TankGame/TankGameTopBar'
+import { TANK_GAME_CONFIG, AIM_CONFIG } from '@/app/games/_components/TankGame/tank.config'
 import { useTankMultiplayer } from '@/app/games/_components/TankGame/useTankMultiplayer'
 
 const TankGame = () => {
@@ -26,7 +27,7 @@ const TankGame = () => {
     resumeLastRoom
   } = useTankMultiplayer()
 
-  const [angle, setAngle] = useState(45)
+  const [angle, setAngle] = useState<number>(AIM_CONFIG.default)
   const [power, setPower] = useState(60)
 
   useEffect(() => {
@@ -89,6 +90,14 @@ const TankGame = () => {
         className="flex flex-col lg:flex-row gap-4 items-start w-full"
       >
         <div className="w-full lg:w-auto relative">
+          <div className="absolute top-0 left-0 right-0 z-10 px-2 pt-2">
+            <TankGameTopBar
+              player1Lives={game.player1_lives}
+              player2Lives={game.player2_lives}
+              windSpeed={game.wind_speed ?? 0}
+              currentTurn={game.current_turn}
+            />
+          </div>
           <TankCanvas
             width={TANK_GAME_CONFIG.canvasWidth}
             height={TANK_GAME_CONFIG.canvasHeight}
@@ -116,8 +125,6 @@ const TankGame = () => {
         <div className="w-full lg:w-[260px] flex flex-col gap-3">
           <TankHUD
             playerNumber={playerNumber}
-            player1Lives={game.player1_lives}
-            player2Lives={game.player2_lives}
             currentTurn={game.current_turn}
             statusMessage={statusMessage}
             roomCode={roomCode}
