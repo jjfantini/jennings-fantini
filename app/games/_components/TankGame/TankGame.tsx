@@ -99,6 +99,7 @@ const TankGame = () => {
         tank1={game.tank1_position}
         tank2={game.tank2_position}
         shot={shot}
+        windSpeed={game.wind_speed ?? 0}
         localAim={isMyTurn ? { angle, power } : null}
         opponentAim={opponentAim}
         localPlayer={playerNumber}
@@ -134,7 +135,7 @@ const TankGame = () => {
           onClick={async () => {
             await startRematch()
           }}
-          className="rounded-lg border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-600"
+          className="w-full rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 hover:from-violet-500 hover:to-indigo-500 transition-all"
         >
           Start new battle
         </button>

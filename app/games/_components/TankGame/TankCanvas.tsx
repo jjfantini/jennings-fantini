@@ -12,6 +12,7 @@ type TankCanvasProps = {
   tank1: TankState
   tank2: TankState
   shot: ShotResult | null
+  windSpeed?: number
   localAim?: { angle: number; power: number } | null
   opponentAim?: { angle: number; power: number } | null
   localPlayer?: 1 | 2 | null
@@ -106,6 +107,24 @@ const getAimLine = (
   return [muzzleWorld, endpoint]
 }
 
+const WIND_MAX = 0.6
+const WIND_SLOTS_PER_SIDE = 5
+
+const getFilledSlotCount = (windSpeed: number) => {
+  const abs = Math.abs(windSpeed)
+  if (abs < 0.02) return 0
+  return Math.min(WIND_SLOTS_PER_SIDE, Math.ceil((abs / WIND_MAX) * WIND_SLOTS_PER_SIDE))
+}
+
+const WIND_PARTICLE_COUNT = [0, 16, 32, 48, 64, 80] as const
+const WIND_TAIL_LENGTH = [0, 6, 12, 18, 24, 30] as const
+const WIND_SPEED_PX_MS = [0, 0.024, 0.048, 0.072, 0.084, 0.096] as const
+
+const windParticleHash = (n: number) => {
+  const x = Math.sin(n * 12.9898) * 43758.5453
+  return x - Math.floor(x)
+}
+
 export const TankCanvas = ({
   width,
   height,
@@ -113,6 +132,7 @@ export const TankCanvas = ({
   tank1,
   tank2,
   shot,
+  windSpeed = 0,
   localAim,
   opponentAim,
   localPlayer
@@ -218,6 +238,40 @@ export const TankCanvas = ({
       gradient.addColorStop(1, '#020617')
       ctx.fillStyle = gradient
       ctx.fillRect(0, 0, width, height)
+
+      const filledSlots = getFilledSlotCount(windSpeed)
+      if (filledSlots > 0) {
+        const skyHeight = height * 0.78
+        const count = WIND_PARTICLE_COUNT[filledSlots]
+        const tailLength = WIND_TAIL_LENGTH[filledSlots]
+        const speedPxMs = WIND_SPEED_PX_MS[filledSlots]
+        const direction = windSpeed >= 0 ? 1 : -1
+        const velocity = direction * speedPxMs
+        const t = performance.now()
+        const wrap = width + tailLength * 2
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)'
+        ctx.lineWidth = 2
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.6)'
+
+        for (let i = 0; i < count; i++) {
+          const baseX = windParticleHash(i) * width
+          const baseY = windParticleHash(i + 100) * Math.max(1, skyHeight)
+          const phaseOffset = windParticleHash(i + 200) * wrap
+          const x =
+            (((baseX + t * velocity + phaseOffset) % wrap) + wrap) % wrap - tailLength
+          const tailEndX = x - direction * tailLength
+
+          ctx.beginPath()
+          ctx.moveTo(x, baseY)
+          ctx.lineTo(tailEndX, baseY)
+          ctx.stroke()
+
+          ctx.beginPath()
+          ctx.arc(x, baseY, 2.5, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }
 
       ctx.beginPath()
       ctx.moveTo(0, height)
@@ -367,7 +421,7 @@ export const TankCanvas = ({
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [height, localAim, opponentAim, width, tank1, tank2, localPlayer, terrain])
+  }, [height, localAim, opponentAim, width, tank1, tank2, localPlayer, terrain, windSpeed])
 
   return (
     <div className="relative w-full max-w-[900px] mx-auto" style={{ aspectRatio: `${width}/${height}` }}>
