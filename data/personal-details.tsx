@@ -1,5 +1,5 @@
 import { Icons } from "@/components/ui/icons";
-import { HomeIcon, FolderIcon, BookOpenIcon, GlobeIcon, CodeIcon, DatabaseIcon, GamepadIcon } from "lucide-react";
+import { HomeIcon, FolderIcon, BookOpenIcon, GlobeIcon, CodeIcon, DatabaseIcon, GamepadIcon, House } from "lucide-react";
 
 export const DATA = {
   name: "Jennings Fantini",
@@ -186,6 +186,130 @@ export const DATA = {
       video: "",
     },
     {
+      title: "✨ Finatic ✨",
+      icon: <GlobeIcon className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
+      borderColor: "border-amber-400 dark:border-amber-200",
+      href: "https://finatic.dev",
+      dates: "March 2025 - Present",
+      active: true,
+      private: true,
+      description:
+        "Multi-component financial B2B SaaS platform that connects users to their brokers. They can pull historical portfolio data, place trades and track performance. Finatic is built on top of a modular architecture consisting of an API, web application, and SDK. The API is built with FastAPI leveraging Pydantic and SQLModel for typed database interactions and validation, backed by a Supabase Postgres instance. The website is a Next.js frontend written in TypeScript. The SDK features a Rust core with bindings for Python and JavaScript.",
+      technologies: [
+        "🐍 Python",
+        "⚡ FastAPI",
+        "📊 SQLModel",
+        "🗃️ Supabase",
+        "⚛️ Next.js",
+        "🔷 TypeScript",
+        "🦀 Rust",
+        "🤖 SDK",
+        "🔄 GitHub Actions",
+        "🔍 pre-commit",
+        "🧹 Ruff",
+        "🎯 Mypy",
+        "🧱 Pydantic",
+        "📝 Commitizen",
+      ],
+      links: [],
+      image: "",
+      video: "",
+    },
+    {
+      title: "Amagansett Rentals",
+      icon: <House className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
+      borderColor: "border-amber-400 dark:border-amber-200",
+      href: "https://www.amagansett-rentals.com",
+      dates: "2025 - Present",
+      active: true,
+      private: true,
+      description:
+        "Hand-built marketing site for a small portfolio of Amagansett summer houses. Guests browse the houses and send enquiries. Clients get a private dashboard to run availability, listings, and maintenance in one place instead of a patchwork of inboxes, spreadsheets, and ad hoc messages.",
+      technologies: [
+        "⚛️ Next.js",
+        "🔷 TypeScript",
+        "🗃️ Supabase",
+        "🎨 Tailwind CSS",
+        "🎯 Shadcn UI",
+        "🔄 React Query",
+        "📝 React Hook Form",
+        "✅ Zod",
+        "💳 Stripe",
+        "📧 Nodemailer",
+        "📜 Agent Skills",
+      ],
+      links: [
+        {
+          type: "Website",
+          href: "https://www.amagansett-rentals.com",
+          icon: <Icons.globe className="size-3" />,
+        },
+      ],
+      image: "",
+      video: "",
+    },
+    {
+      title: "Social AI Bot",
+      icon: <CodeIcon className="h-4 w-4 text-black dark:text-neutral-400" />,
+      borderColor: "border-neutral-400 dark:border-neutral-400",
+      href: "https://github.com/humblFINANCE/social-orghi",
+      dates: "March 2024 - March 2024",
+      active: true,
+      private: true,
+      description:
+        "Built an AI agent framework to manage social media accounts autonomously. Features AI-powered content management, local Supabase PostgreSQL database, and standardized development practices.",
+      technologies: [
+        "🐍 Python 3.12",
+        "🤖 Pydantic-AI",
+        "⚡ FastAPI",
+        "🗃️ Supabase",
+        "🐘 PostgreSQL",
+        "📦 Poetry",
+        "🐳 Docker",
+        "📝 Commitizen",
+        "🤖 AI Agents",
+        "🧠 OpenAI",
+        "🌐 Anthropic",
+        "🔍 Google AI"
+      ],
+      links: [
+        {
+          type: "Source",
+          href: "https://github.com/humblFINANCE/social-orghi",
+          icon: <Icons.github className="size-3" />,
+        }
+      ],
+      image: "",
+      video: ""
+    },
+    {
+      title: "waterfordWEBSITE",
+      icon: <GlobeIcon className="h-4 w-4 text-black dark:text-neutral-400" />,
+      borderColor: "border-neutral-400 dark:border-neutral-400",
+      href: "https://waterford-es.com",
+      dates: "2025 - Present",
+      active: true,
+      private: false,
+      description:
+        "Next.js real estate marketing website for Waterford. Features property listings, marketing content, and a modern responsive frontend.",
+      technologies: [
+        "⚛️ Next.js",
+        "🔷 TypeScript",
+        "🎨 Tailwind CSS",
+        "📱 Responsive Design",
+        "🔍 SEO Optimization",
+      ],
+      links: [
+        {
+          type: "Website",
+          href: "https://waterford-es.com",
+          icon: <Icons.globe className="size-3" />,
+        }
+      ],
+      image: "",
+      video: ""
+    },
+    {
       title: "humblAPI",
       icon: <DatabaseIcon className="h-4 w-4 text-black dark:text-neutral-400" />,
       borderColor: "border-neutral-400 dark:border-neutral-400",
@@ -245,40 +369,6 @@ export const DATA = {
         {
           type: "Source",
           href: "https://github.com/humblFINANCE/cookiecutter-python",
-          icon: <Icons.github className="size-3" />,
-        }
-      ],
-      image: "",
-      video: ""
-    },
-    {
-      title: "Social AI Bot",
-      icon: <CodeIcon className="h-4 w-4 text-black dark:text-neutral-400" />,
-      borderColor: "border-neutral-400 dark:border-neutral-400",
-      href: "https://github.com/humblFINANCE/social-orghi",
-      dates: "March 2024 - March 2024",
-      active: true,
-      private: true,
-      description: 
-        "Built an AI agent framework to manage social media accounts autonomously. Features AI-powered content management, local Supabase PostgreSQL database, and standardized development practices.",
-      technologies: [
-        "🐍 Python 3.12",
-        "🤖 Pydantic-AI",
-        "⚡ FastAPI",
-        "🗃️ Supabase",
-        "🐘 PostgreSQL",
-        "📦 Poetry",
-        "🐳 Docker",
-        "📝 Commitizen",
-        "🤖 AI Agents",
-        "🧠 OpenAI",
-        "🌐 Anthropic",
-        "🔍 Google AI"
-      ],
-      links: [
-        {
-          type: "Source",
-          href: "https://github.com/humblFINANCE/social-orghi",
           icon: <Icons.github className="size-3" />,
         }
       ],
@@ -367,7 +457,7 @@ export const DATA = {
         "🔄 React Query",
         "📝 React Hook Form",
         "✅ Zod",
-        "�� Stripe",
+        "💳 Stripe",
         "🚀 tRPC"
       ],
       links: [
@@ -409,65 +499,6 @@ export const DATA = {
       ],
       image: "",
       video: ""
-    },
-    {
-      title: "waterfordWEBSITE",
-      icon: <GlobeIcon className="h-4 w-4 text-black dark:text-neutral-400" />,
-      borderColor: "border-neutral-400 dark:border-neutral-400",
-      href: "https://waterford-es.com",
-      dates: "2025 - Present",
-      active: true,
-      private: false,
-      description:
-        "Next.js real estate marketing website for Waterford. Features property listings, marketing content, and a modern responsive frontend.",
-      technologies: [
-        "⚛️ Next.js",
-        "🔷 TypeScript",
-        "🎨 Tailwind CSS",
-        "📱 Responsive Design",
-        "🔍 SEO Optimization",
-      ],
-      links: [
-        {
-          type: "Website",
-          href: "https://waterford-es.com",
-          icon: <Icons.globe className="size-3" />,
-        }
-      ],
-      image: "",
-      video: ""
-    },
-    {
-      title: "Finatic",
-      icon: <GlobeIcon className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
-      borderColor: "border-amber-400 dark:border-amber-200",
-      href: "https://finatic.dev",
-      dates: "March 2025 - Present",
-      active: true,
-      private: true,
-      featured: true,
-      order: 3,
-      description:
-        "Multi-component financial B2B SaaS platform that connects users to their brokers. They can pull historical portfolio data, place trades and track performance. Finatic is built on top of a modular architecture consisting of an API, web application, and SDK. The API is built with FastAPI leveraging Pydantic and SQLModel for typed database interactions and validation, backed by a Supabase Postgres instance. The website is a Next.js frontend written in TypeScript. The SDK features a Rust core with bindings for Python and JavaScript.",
-      technologies: [
-        "🐍 Python",
-        "⚡ FastAPI",
-        "📊 SQLModel",
-        "🗃️ Supabase",
-        "⚛️ Next.js",
-        "🔷 TypeScript",
-        "🦀 Rust",
-        "🤖 SDK",
-        "🔄 GitHub Actions",
-        "🔍 pre-commit",
-        "🧹 Ruff",
-        "🎯 Mypy",
-        "🧱 Pydantic",
-        "📝 Commitizen",
-      ],
-      links: [],
-      image: "",
-      video: "",
     },
   ],
   hackathons: [],
