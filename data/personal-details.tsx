@@ -241,9 +241,10 @@ export const DATA = {
       private: false,
       description: (
         <>
-          humblSKILLS is a custom skill architecture that iteratively and recursively learns over
-          time: the registry and CLI compound as you use them, and eval runs show better pass
-          rates and lower token use over sessions. For evaluation and metrics, see{" "}
+          humblSKILLS is a personal skill registry and a single static Go binary (humblskills) that
+          installs agentskills.io-format skills into Claude Code, Cursor, and other agents. The
+          registry and CLI compound over time, and eval runs show better pass rates and lower
+          token use over sessions. For evaluation and metrics, see{" "}
           <a
             href="https://jjfantini.github.io/humblSKILLS/eval/reports/"
             target="_blank"
@@ -256,11 +257,16 @@ export const DATA = {
       ),
       technologies: [
         "🦫 Go",
-        "🧠 Anthropic SDK",
-        "🔄 GitHub Actions",
+        "⚙️ Cobra",
         "🫧 Bubble Tea",
         "🧩 Huh",
+        "🎨 Lipgloss",
+        "🧱 YAML",
+        "📘 MkDocs (Material)",
+        "🚀 GoReleaser",
+        "🔄 GitHub Actions",
         "🪚 Makefile",
+        "🧠 Anthropic SDK",
       ],
       easyInstall: {
         label: "Easy Install",
