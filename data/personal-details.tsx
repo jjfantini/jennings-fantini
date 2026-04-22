@@ -208,7 +208,7 @@ export const DATA = {
       icon: <GlobeIcon className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
       borderColor: "border-amber-400 dark:border-amber-200",
       href: "https://finatic.dev",
-      dates: "March 2025 - Present",
+      dates: "March 2025 - April 2026",
       active: true,
       private: true,
       usesAI: true,
