@@ -284,7 +284,7 @@ export const DATA = {
       icon: <House className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
       borderColor: "border-amber-400 dark:border-amber-200",
       href: "https://www.amagansett-rentals.com",
-      dates: "2025 - Present",
+      dates: "Apr 2026 - Present",
       active: true,
       private: true,
       description:
