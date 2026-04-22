@@ -1,5 +1,21 @@
 import { Icons } from "@/components/ui/icons";
-import { HomeIcon, FolderIcon, BookOpenIcon, GlobeIcon, CodeIcon, DatabaseIcon, GamepadIcon, House } from "lucide-react";
+import {
+  HomeIcon,
+  FolderIcon,
+  BookOpenIcon,
+  GlobeIcon,
+  CodeIcon,
+  DatabaseIcon,
+  GamepadIcon,
+  House,
+  Brain,
+} from "lucide-react";
+/** Projects may include inline links in `description` (JSX) and optional one-click install for agents. */
+export type ProjectEasyInstall = {
+  label: string;
+  tooltip: string;
+  text: string;
+};
 
 export const DATA = {
   name: "Jennings Fantini",
@@ -216,6 +232,54 @@ export const DATA = {
       video: "",
     },
     {
+      title: "humblSKILLS",
+      icon: <Brain className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
+      borderColor: "border-amber-400 dark:border-amber-200",
+      href: "https://github.com/jjfantini/humblSKILLS",
+      dates: "Present",
+      active: true,
+      private: false,
+      description: (
+        <>
+          humblSKILLS is a custom skill architecture that iteratively and recursively learns over
+          time: the registry and CLI compound as you use them, and eval runs show better pass
+          rates and lower token use over sessions. For evaluation and metrics, see{" "}
+          <a
+            href="https://jjfantini.github.io/humblSKILLS/eval/reports/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            the published humblSKILLS eval reports
+          </a>
+          .
+        </>
+      ),
+      technologies: [
+        "🦫 Go",
+        "🧠 Anthropic SDK",
+        "🔄 GitHub Actions",
+        "🫧 Bubble Tea",
+        "🧩 Huh",
+        "🪚 Makefile",
+      ],
+      easyInstall: {
+        label: "Easy Install",
+        tooltip:
+          "Paste the copied text into your agent to get setup with the skills.",
+        text:
+          "Read https://jjfantini.github.io/humblSKILLS/getting_started/installation/SKILL.md and install humblskills on this machine following those instructions. When finished, run humblskills doctor and fix anything it reports until it passes.",
+      },
+      links: [
+        {
+          type: "Source",
+          href: "https://github.com/jjfantini/humblSKILLS",
+          icon: <Icons.github className="size-3" />,
+        },
+      ],
+      image: "",
+      video: "",
+    },
+    {
       title: "Amagansett Rentals",
       icon: <House className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
       borderColor: "border-amber-400 dark:border-amber-200",
@@ -289,7 +353,7 @@ export const DATA = {
       href: "https://waterford-es.com",
       dates: "2025 - Present",
       active: true,
-      private: false,
+      private: true,
       description:
         "Next.js real estate marketing website for Waterford. Features property listings, marketing content, and a modern responsive frontend.",
       technologies: [
@@ -502,4 +566,4 @@ export const DATA = {
     },
   ],
   hackathons: [],
-} as const;
+};
