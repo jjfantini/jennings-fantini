@@ -54,6 +54,7 @@ export default function ProjectsPage() {
               description={project.description}
               href={project.href}
               isPrivate={project.private}
+              usesAI={project.usesAI}
               dates={project.dates}
               technologies={project.technologies}
               borderColor={project.borderColor}
@@ -74,6 +75,7 @@ interface GridItemProps {
   description: React.ReactNode
   href: string
   isPrivate: boolean
+  usesAI: boolean
   dates: string
   technologies: readonly string[]
   borderColor?: string
@@ -144,6 +146,7 @@ const GridItem = ({
   description,
   href,
   isPrivate,
+  usesAI,
   dates,
   technologies,
   borderColor = "border-gray-600 dark:border-gray-600",
@@ -190,12 +193,31 @@ const GridItem = ({
                   {icon}
                 </div>
               )}
-              <span
-                className="shrink-0 px-2 py-1 text-xs rounded-full bg-zinc-200/60 
-                           dark:bg-zinc-800/40 text-zinc-900 dark:text-zinc-100"
+              <div
+                className="flex shrink-0 flex-wrap items-center justify-end gap-1.5"
+                aria-label="Project visibility"
               >
-                {isPrivate ? "Private" : "Public"}
-              </span>
+                {usesAI && (
+                  <span
+                    title="Uses AI in the product or workflow"
+                    className={cn(
+                      "box-border px-2 py-1 text-xs rounded-full",
+                      "bg-emerald-500/[0.14] text-emerald-900",
+                      "shadow-[inset_0_0_0_1px_rgba(16,185,129,0.32)]",
+                      "dark:bg-emerald-500/20 dark:text-emerald-100",
+                      "dark:shadow-[inset_0_0_0_1px_rgba(52,211,153,0.4),0_0_8px_rgba(52,211,153,0.1)]"
+                    )}
+                  >
+                    AI
+                  </span>
+                )}
+                <span
+                  className="px-2 py-1 text-xs rounded-full bg-zinc-200/60 
+                             dark:bg-zinc-800/40 text-zinc-900 dark:text-zinc-100"
+                >
+                  {isPrivate ? "Private" : "Public"}
+                </span>
+              </div>
             </div>
             <div className="space-y-3">
               <h3 className="pt-0.5 text-xl/[1.375rem] font-semibold font-sans 

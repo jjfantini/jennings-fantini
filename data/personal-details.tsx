@@ -137,6 +137,7 @@ export const DATA = {
       dates: "Oct 2022 - Present",
       active: true,
       private: true,
+      usesAI: false,
       description:
         "A modern, comprehensive financial platform offering multiple tools and services through a modular architecture. Features include humblCHANNEL (robust trading price channel), humblPORTFOLIO (portfolio management), and humblCOMPASS (global economic health indicator).",
       technologies: [
@@ -170,6 +171,7 @@ export const DATA = {
       dates: "March 2021 - Present",
       active: true,
       private: false,
+      usesAI: false,
       description:
         "Built a Python library that connects humblFINANCE to financial data sources and provides institutional-grade analysis tools. Features include Mandelbrot price channels and high-performance volatility estimators powered by Polars.",
       technologies: [
@@ -209,6 +211,7 @@ export const DATA = {
       dates: "March 2025 - Present",
       active: true,
       private: true,
+      usesAI: true,
       description:
         "Multi-component financial B2B SaaS platform that connects users to their brokers. They can pull historical portfolio data, place trades and track performance. Finatic is built on top of a modular architecture consisting of an API, web application, and SDK. The API is built with FastAPI leveraging Pydantic and SQLModel for typed database interactions and validation, backed by a Supabase Postgres instance. The website is a Next.js frontend written in TypeScript. The SDK features a Rust core with bindings for Python and JavaScript.",
       technologies: [
@@ -239,6 +242,7 @@ export const DATA = {
       dates: "Present",
       active: true,
       private: false,
+      usesAI: true,
       description: (
         <>
           humblSKILLS is a personal skill registry and a single static Go binary (humblskills) that
@@ -293,6 +297,7 @@ export const DATA = {
       dates: "Apr 2026 - Present",
       active: true,
       private: true,
+      usesAI: true,
       description:
         "Hand-built marketing site for a small portfolio of Amagansett summer houses. Guests browse the houses and send enquiries. Clients get a private dashboard to run availability, listings, and maintenance in one place instead of a patchwork of inboxes, spreadsheets, and ad hoc messages.",
       technologies: [
@@ -326,6 +331,7 @@ export const DATA = {
       dates: "March 2024 - March 2024",
       active: true,
       private: true,
+      usesAI: true,
       description:
         "Built an AI agent framework to manage social media accounts autonomously. Features AI-powered content management, local Supabase PostgreSQL database, and standardized development practices.",
       technologies: [
@@ -360,6 +366,7 @@ export const DATA = {
       dates: "2025 - Present",
       active: true,
       private: true,
+      usesAI: false,
       description:
         "Next.js real estate marketing website for Waterford. Features property listings, marketing content, and a modern responsive frontend.",
       technologies: [
@@ -387,6 +394,7 @@ export const DATA = {
       dates: "March 2024 - Present", 
       active: true,
       private: false,
+      usesAI: false,
       description:
         "Built a FastAPI-based backend service for the humblFINANCE web app, providing API endpoints and data processing capabilities to support financial operations.",
       technologies: [
@@ -422,6 +430,7 @@ export const DATA = {
       dates: "March 2024 - Present",
       active: true,
       private: false,
+      usesAI: false,
       description: 
         "Created a modern Cookiecutter template for scaffolding Python packages and apps with features like Dev Containers, Poetry dependency management, Micromamba environments, and automated CI/CD pipelines.",
       technologies: [
@@ -453,6 +462,7 @@ export const DATA = {
       dates: "March 2024 - Present",
       active: true,
       private: false,
+      usesAI: false,
       description: 
         "Built a specialized extension for the OpenBB Platform that integrates options data and analytics from ORATS. Features include options data retrieval (pricing, Greeks, implied volatility), advanced analytics, and historical data access with customizable queries.",
       technologies: [
@@ -485,6 +495,7 @@ export const DATA = {
       dates: "March 2024 - Present", 
       active: true,
       private: false,
+      usesAI: true,
       description:
         "Built a FastAPI-based backend service for generating a customizable podcast generation from any text, topic, urls, or files. Features include RESTful API endpoints, asynchronous operations, and configurable multi-environment support.",
       technologies: [
@@ -514,6 +525,7 @@ export const DATA = {
       dates: "March 2024 - Present",
       active: true,
       private: true,
+      usesAI: true,
       description:
         "Built an AI-powered SaaS platform that generates a customizable podcast from any text, topic, urls, or files. Users can sign up, customize their podcast, and download or listen to the generated podcast on the platform.",
       technologies: [
@@ -548,6 +560,7 @@ export const DATA = {
       dates: "March 2024 - Present",
       active: true,
       private: false,
+      usesAI: false,
       description:
         "Built a landing page for a patented pre-loaded dynamically mixing beverage vessel. Features include product showcase, interactive demonstrations, and a contact form for bespoke orders. The site highlights the world's first portable splashing vessel innovation.",
       technologies: [
