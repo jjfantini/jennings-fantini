@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, useSpring } from "motion/react";
 import Image from "next/image";
+import { DATA } from "@/data/personal-details";
 
 interface ChasingLogoProps {
   imageUrl?: string;
@@ -13,14 +14,22 @@ interface ChasingLogoProps {
   shakeDuration?: number;
 }
 
+/** Crop zoom (visual). Next Image width/height must include this x DPR or the bitmap looks soft. */
+const IMAGE_CROP_SCALE = 2;
+
 export const ChasingLogo = ({
-  imageUrl = "https://2zzhd7n3m2.ufs.sh/f/Ev0wIwMYTjZfBtT1RWXf6NxYnpZJsSbPaoLhElXW7Irv4FgH",
+  imageUrl = DATA.chasingLogoUrl,
   size = 80,
   chaseSpeed = 0.15,
   fleeSpeed = 0.5,
   fleeDistance = 200,
   shakeDuration = 300,
 }: ChasingLogoProps) => {
+  const intrinsicPx = Math.max(
+    1,
+    Math.ceil(size * IMAGE_CROP_SCALE * 3),
+  );
+
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isFleeing, setIsFleeing] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
@@ -149,9 +158,14 @@ export const ChasingLogo = ({
         <Image
           src={imageUrl}
           alt="Chasing Logo"
-          width={size}
-          height={size}
-          className="w-full h-full object-cover rounded-full"
+          width={intrinsicPx}
+          height={intrinsicPx}
+          sizes={`${Math.ceil(size * IMAGE_CROP_SCALE)}px`}
+          className="h-full w-full object-cover rounded-full"
+          style={{
+            transform: `scale(${IMAGE_CROP_SCALE})`,
+            transformOrigin: "center",
+          }}
           priority
         />
       </motion.div>
