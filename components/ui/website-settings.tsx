@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { motion } from 'motion/react'
 import { Settings2 } from 'lucide-react'
 import { useChasingLogo } from '@/components/providers/chasing-logo-provider'

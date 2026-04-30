@@ -88,47 +88,45 @@ function SettingsDockIcon({ compact }: { compact: boolean }) {
   }, [open])
 
   return (
-    <DockIcon className="relative overflow-visible">
-      <div ref={wrapperRef} className="relative">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Website settings"
-              aria-haspopup="dialog"
-              aria-expanded={open}
-              onClick={() => setOpen((value) => !value)}
-              className={cn(
-                buttonVariants({ variant: 'ghost', size: 'icon' }),
-                iconSizeClass(compact)
-              )}
-            >
-              <Settings2 className={compact ? 'size-3.5' : 'size-4'} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Settings</p>
-          </TooltipContent>
-        </Tooltip>
+    <div ref={wrapperRef} className="relative">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label="Website settings"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'icon' }),
+              iconSizeClass(compact)
+            )}
+          >
+            <Settings2 className={compact ? 'size-3.5' : 'size-4'} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Settings</p>
+        </TooltipContent>
+      </Tooltip>
 
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              role="dialog"
-              aria-label="Website settings"
-              initial={{ opacity: 0, scale: 0.95, y: compact && corner.startsWith('top') ? -4 : 4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: compact && corner.startsWith('top') ? -4 : 4 }}
-              transition={{ duration: 0.16 }}
-              style={{ transformOrigin: getSettingsPanelOrigin(corner, compact) }}
-              className={getSettingsPanelClasses(corner, compact)}
-            >
-              <WebsiteSettings />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </DockIcon>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="dialog"
+            aria-label="Website settings"
+            initial={{ opacity: 0, scale: 0.95, y: compact && corner.startsWith('top') ? -4 : 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: compact && corner.startsWith('top') ? -4 : 4 }}
+            transition={{ duration: 0.16 }}
+            style={{ transformOrigin: getSettingsPanelOrigin(corner, compact) }}
+            className={getSettingsPanelClasses(corner, compact)}
+          >
+            <WebsiteSettings />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -190,7 +188,9 @@ const dockContent = (compact?: boolean) => (
         </TooltipContent>
       </Tooltip>
     </DockIcon>
-    <SettingsDockIcon compact={!!compact} />
+    <DockIcon className="relative overflow-visible">
+      <SettingsDockIcon compact={!!compact} />
+    </DockIcon>
   </>
 )
 
