@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Menu } from 'lucide-react'
+import { Menu, Settings2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 
 import { ModeToggle } from '@/components/ui/mode-toggle'
 import { buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { WebsiteSettings } from '@/components/ui/website-settings'
 import {
   Tooltip,
   TooltipContent,
@@ -22,6 +23,114 @@ import { useNavbar, type NavbarCorner } from '@/components/providers/navbar-prov
 
 const iconSizeClass = (compact: boolean) =>
   compact ? 'size-8 rounded-full' : 'size-12 rounded-full'
+
+function getSettingsPanelClasses(corner: NavbarCorner, compact: boolean): string {
+  const base = 'absolute z-[60] w-[min(calc(100vw-2rem),22rem)]'
+
+  if (!compact) {
+    return cn(base, 'bottom-full right-0 mb-3')
+  }
+
+  switch (corner) {
+    case 'top-left':
+      return cn(base, 'left-0 top-full mt-3')
+    case 'top-right':
+      return cn(base, 'right-0 top-full mt-3')
+    case 'bottom-left':
+      return cn(base, 'left-0 bottom-full mb-3')
+    case 'bottom-right':
+    default:
+      return cn(base, 'right-0 bottom-full mb-3')
+  }
+}
+
+function getSettingsPanelOrigin(corner: NavbarCorner, compact: boolean): string {
+  if (!compact) return 'bottom right'
+
+  switch (corner) {
+    case 'top-left':
+      return 'top left'
+    case 'top-right':
+      return 'top right'
+    case 'bottom-left':
+      return 'bottom left'
+    case 'bottom-right':
+    default:
+      return 'bottom right'
+  }
+}
+
+function SettingsDockIcon({ compact }: { compact: boolean }) {
+  const [open, setOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const { corner } = useNavbar()
+
+  useEffect(() => {
+    if (!open) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open])
+
+  return (
+    <DockIcon className="relative overflow-visible">
+      <div ref={wrapperRef} className="relative">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Website settings"
+              aria-haspopup="dialog"
+              aria-expanded={open}
+              onClick={() => setOpen((value) => !value)}
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'icon' }),
+                iconSizeClass(compact)
+              )}
+            >
+              <Settings2 className={compact ? 'size-3.5' : 'size-4'} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Settings</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              role="dialog"
+              aria-label="Website settings"
+              initial={{ opacity: 0, scale: 0.95, y: compact && corner.startsWith('top') ? -4 : 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: compact && corner.startsWith('top') ? -4 : 4 }}
+              transition={{ duration: 0.16 }}
+              style={{ transformOrigin: getSettingsPanelOrigin(corner, compact) }}
+              className={getSettingsPanelClasses(corner, compact)}
+            >
+              <WebsiteSettings />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </DockIcon>
+  )
+}
 
 const dockContent = (compact?: boolean) => (
   <>
@@ -81,6 +190,7 @@ const dockContent = (compact?: boolean) => (
         </TooltipContent>
       </Tooltip>
     </DockIcon>
+    <SettingsDockIcon compact={!!compact} />
   </>
 )
 
@@ -125,7 +235,7 @@ function getDockTransformOrigin(corner: NavbarCorner): string {
 }
 
 function getDockContainerClasses(corner: NavbarCorner): string {
-  const base = 'fixed z-50 pointer-events-none flex overflow-hidden'
+  const base = 'fixed z-50 pointer-events-none flex overflow-visible'
   switch (corner) {
     case 'top-left':
       return cn(base, 'top-4 left-4 right-4 justify-start')
@@ -298,7 +408,7 @@ function HamburgerWithDock() {
               <TooltipProvider>
                 <div
                   className={cn(
-                    'pointer-events-auto w-full max-w-full overflow-hidden flex h-12',
+                    'pointer-events-auto w-full max-w-full overflow-visible flex h-12',
                     corner.includes('left') ? 'justify-start' : 'justify-end ml-auto'
                   )}
                 >

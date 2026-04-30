@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion } from 'motion/react'
-import { ChevronDown, Settings2 } from 'lucide-react'
+import { Settings2 } from 'lucide-react'
 import { useChasingLogo } from '@/components/providers/chasing-logo-provider'
 import { useNavbar } from '@/components/providers/navbar-provider'
 import { cn } from '@/lib/utils'
@@ -40,25 +40,52 @@ function Toggle({
   )
 }
 
-export function WebsiteSettings() {
+type WebsiteSettingsProps = {
+  className?: string
+}
+
+function SettingRow({
+  title,
+  description,
+  checked,
+  onChange
+}: {
+  title: string
+  description: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="flex items-stretch justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/50">
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+        <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          {title}
+        </span>
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+          {description}
+        </span>
+      </div>
+      <div className="flex shrink-0 items-center">
+        <Toggle checked={checked} onChange={onChange} />
+      </div>
+    </div>
+  )
+}
+
+export function WebsiteSettings({ className }: WebsiteSettingsProps) {
   const { collapsed, setCollapsed } = useNavbar()
   const { chasingLogoEnabled, setChasingLogoEnabled } = useChasingLogo()
-  const [isExpanded, setIsExpanded] = React.useState(false)
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.2 }}
-      className="w-full max-w-md"
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+      transition={{ duration: 0.18 }}
+      className={cn('w-full', className)}
     >
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white/80 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/80 dark:shadow-neutral-950/50">
-        <button
-          type="button"
-          onClick={() => setIsExpanded((e) => !e)}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/50"
-          aria-expanded={isExpanded}
-        >
+        <div className="flex w-full items-center gap-3 px-4 py-3 text-left">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-indigo-500/20">
             <Settings2 className="size-4 text-violet-600 dark:text-violet-400" />
           </div>
@@ -70,51 +97,21 @@ export function WebsiteSettings() {
               Customize how the site works for you
             </p>
           </div>
-          <ChevronDown
-            className={cn(
-              'size-5 shrink-0 text-neutral-500 transition-transform duration-200',
-              isExpanded && 'rotate-180'
-            )}
-          />
-        </button>
+        </div>
 
-        <div
-          className="grid transition-[grid-template-rows] duration-200 ease-out"
-          style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
-        >
-          <div className="min-h-0 overflow-hidden">
-            <div className="space-y-1 border-t border-neutral-200 p-4 dark:border-neutral-800">
-              <div className="flex items-stretch justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/50">
-                <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                    Chasing Logo
-                  </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    Show the profile image that follows your pointer
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center">
-                  <Toggle
-                    checked={chasingLogoEnabled}
-                    onChange={setChasingLogoEnabled}
-                  />
-                </div>
-              </div>
-              <div className="flex items-stretch justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/50">
-                <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                    Collapsed Menu
-                  </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    Show navigation as a compact menu you can drag to any corner
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center">
-                  <Toggle checked={collapsed} onChange={setCollapsed} />
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="space-y-1 border-t border-neutral-200 p-4 dark:border-neutral-800">
+          <SettingRow
+            title="Chasing Logo"
+            description="Show the profile image that follows your pointer"
+            checked={chasingLogoEnabled}
+            onChange={setChasingLogoEnabled}
+          />
+          <SettingRow
+            title="Collapsed Menu"
+            description="Show navigation as a compact menu you can drag to any corner"
+            checked={collapsed}
+            onChange={setCollapsed}
+          />
         </div>
       </div>
     </motion.div>

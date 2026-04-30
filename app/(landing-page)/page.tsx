@@ -2,7 +2,6 @@ import { TerminalIntro } from "./_components/terminal-intro";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { RepellingText } from "./_components/repelling-title";
 import { ChasingLogoGate } from "./_components/chasing-logo-gate";
-import { WebsiteSettings } from "@/components/ui/website-settings";
 
 export default function LandingPage() {
   return (
@@ -22,10 +21,6 @@ export default function LandingPage() {
         <span className="font-bold tracking-tighter text-4xl md:text-6xl lg:text-7xl">
           <p><AuroraText>execute.</AuroraText></p>
         </span>
-
-        <div className="mt-10">
-          <WebsiteSettings />
-        </div>
       </div>
     </div>
   );
