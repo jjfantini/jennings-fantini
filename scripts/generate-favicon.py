@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Build app/favicon.ico from scripts/favicon-source.png.
 
-Crop/zoom matches chasing-logo IMAGE_CROP_SCALE (keep in sync).
+Center-crop zoom uses FAVICON_CROP_SCALE (lower = zoom out, show more in frame).
+Chasing logo uses a separate scale in chasing-logo.tsx.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,10 +12,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
-# Sync with app/(landing-page)/_components/chasing-logo.tsx
-IMAGE_CROP_SCALE = 2.0
+# Lower than chasing-logo on purpose: favicon reads better with a bit more headroom.
+FAVICON_CROP_SCALE = 1.55
 # Nudge crop upward so framing favors the face over shoulders.
-HEAD_BIAS_Y = 0.06
+HEAD_BIAS_Y = 0.04
 
 REPO = Path(__file__).resolve().parent.parent
 SOURCE = REPO / "scripts" / "favicon-source.png"
@@ -58,7 +60,7 @@ def main() -> None:
     square = im.crop((left, top, right, bottom))
     w, h = square.size
     side = min(w, h)
-    inner = max(2, int(round(side / IMAGE_CROP_SCALE)))
+    inner = max(2, int(round(side / FAVICON_CROP_SCALE)))
     margin = (side - inner) // 2
     zoomed = square.crop((margin, margin, margin + inner, margin + inner))
 
