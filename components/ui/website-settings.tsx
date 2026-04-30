@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { Settings2 } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { useChasingLogo } from '@/components/providers/chasing-logo-provider'
 import { useNavbar } from '@/components/providers/navbar-provider'
 import { cn } from '@/lib/utils'
@@ -86,7 +86,7 @@ export function WebsiteSettings({ className }: WebsiteSettingsProps) {
       <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white/80 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/80 dark:shadow-neutral-950/50">
         <div className="flex w-full items-center gap-3 px-4 py-3 text-left">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-indigo-500/20">
-            <Settings2 className="size-4 text-violet-600 dark:text-violet-400" />
+            <Settings className="size-4 text-violet-600 dark:text-violet-400" />
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">

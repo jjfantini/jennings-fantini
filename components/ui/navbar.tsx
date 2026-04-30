@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Menu, Settings2 } from 'lucide-react'
+import { Menu, Settings } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 
 import { ModeToggle } from '@/components/ui/mode-toggle'
@@ -102,7 +102,7 @@ function SettingsDockIcon({ compact }: { compact: boolean }) {
               iconSizeClass(compact)
             )}
           >
-            <Settings2 className={compact ? 'size-3.5' : 'size-4'} />
+            <Settings className={compact ? 'size-3.5' : 'size-4'} />
           </button>
         </TooltipTrigger>
         <TooltipContent>
