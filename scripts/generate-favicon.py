@@ -37,25 +37,18 @@ def main() -> None:
     if not fg.any():
         raise SystemExit("Could not find subject (foreground) pixels.")
 
-    ys, xs = np.where(fg)
-    y0, y1 = int(ys.min()), int(ys.max())
-    x0, x1 = int(xs.min()), int(xs.max())
-    cx = (x0 + x1) // 2
-    cy = (y0 + y1) // 2
-    side = max(x1 - x0 + 1, y1 - y0 + 1)
+    # Center on the frame, not the fg bbox (bbox centroids sit off-center easily).
+    cx = im.width // 2
+    cy = im.height // 2
+    side = min(im.width, im.height)
 
-    # Bias crop toward head
+    # Bias crop toward head (vertical only)
     cy = int(cy - HEAD_BIAS_Y * side)
 
-    half = side // 2
-    left = max(0, cx - half)
-    top = max(0, cy - half)
-    right = min(im.width, left + side)
-    bottom = min(im.height, top + side)
-    if right - left < side:
-        left = max(0, right - side)
-    if bottom - top < side:
-        top = max(0, bottom - side)
+    left = max(0, min(cx - side // 2, im.width - side))
+    top = max(0, min(cy - side // 2, im.height - side))
+    right = left + side
+    bottom = top + side
 
     square = im.crop((left, top, right, bottom))
     w, h = square.size
