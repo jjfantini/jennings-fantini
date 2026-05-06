@@ -3,10 +3,14 @@
 import { GlowingEffect } from "@/components/ui/glowing-effect"
 import { AnimatedTitle } from "@/components/ui/animated-title"
 import TypingAnimation from "@/components/ui/typing-animation"
-import { DATA, type ProjectEasyInstall } from "@/data/personal-details"
+import {
+  DATA,
+  type ProjectEasyInstall,
+  type ProjectPrivateNotice,
+} from "@/data/personal-details"
 import { motion } from "motion/react"
-import { useCallback, useState } from "react"
-import { Check } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+import { Check, X } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -59,6 +63,7 @@ export default function ProjectsPage() {
               technologies={project.technologies}
               borderColor={project.borderColor}
               easyInstall={"easyInstall" in project ? project.easyInstall : undefined}
+              privateNotice={"privateNotice" in project ? project.privateNotice : undefined}
             />
           ))}
         </motion.ul>
@@ -80,6 +85,7 @@ interface GridItemProps {
   technologies: readonly string[]
   borderColor?: string
   easyInstall?: ProjectEasyInstall
+  privateNotice?: ProjectPrivateNotice
 }
 
 function EasyInstallButton({ config }: { config: ProjectEasyInstall }) {
@@ -139,6 +145,79 @@ function EasyInstallButton({ config }: { config: ProjectEasyInstall }) {
   )
 }
 
+function PrivateProjectModal({
+  notice,
+  projectTitle,
+  onClose,
+}: {
+  notice: ProjectPrivateNotice
+  projectTitle: string
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose()
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="private-project-modal-title"
+        aria-describedby="private-project-modal-description"
+        className={cn(
+          "relative w-full max-w-lg rounded-2xl border border-white/20",
+          "bg-white/80 p-6 font-sans text-zinc-950 shadow-2xl backdrop-blur-xl",
+          "dark:border-zinc-700/70 dark:bg-zinc-950/80 dark:text-zinc-50"
+        )}
+        onClick={(event) => {
+          event.stopPropagation()
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close private project details"
+          className={cn(
+            "absolute right-4 top-4 rounded-full p-1.5 text-zinc-600 transition-colors",
+            "hover:bg-zinc-200/70 hover:text-zinc-950",
+            "dark:text-zinc-300 dark:hover:bg-zinc-800/80 dark:hover:text-white"
+          )}
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+        <div className="space-y-3 pr-8">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+            {projectTitle}
+          </p>
+          <h4 id="private-project-modal-title" className="text-2xl font-semibold">
+            {notice.title}
+          </h4>
+          <p
+            id="private-project-modal-description"
+            className="text-sm leading-6 text-zinc-700 dark:text-zinc-300"
+          >
+            {notice.body}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const GridItem = ({
   area = "",
   icon,
@@ -151,7 +230,13 @@ const GridItem = ({
   technologies,
   borderColor = "border-gray-600 dark:border-gray-600",
   easyInstall,
+  privateNotice,
 }: GridItemProps) => {
+  const [isPrivateNoticeOpen, setIsPrivateNoticeOpen] = useState(false)
+  const closePrivateNotice = useCallback(() => {
+    setIsPrivateNoticeOpen(false)
+  }, [])
+
   return (
     <motion.li 
       className={`min-h-[14rem] list-none ${area}`}
@@ -222,11 +307,26 @@ const GridItem = ({
             <div className="space-y-3">
               <h3 className="pt-0.5 text-xl/[1.375rem] font-semibold font-sans 
                              -tracking-4 md:text-2xl/[1.875rem] text-balance">
-                <a href={href} target="_blank" rel="noopener noreferrer" 
-                   className="text-black dark:text-white transition-colors duration-300 
-                              hover:text-emerald-500 dark:hover:text-emerald-400">
-                  {title}
-                </a>
+                {privateNotice ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPrivateNoticeOpen(true)
+                    }}
+                    className="text-left text-black transition-colors duration-300 hover:text-emerald-500 dark:text-white dark:hover:text-emerald-400"
+                  >
+                    {title}
+                  </button>
+                ) : (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-black transition-colors duration-300 hover:text-emerald-500 dark:text-white dark:hover:text-emerald-400"
+                  >
+                    {title}
+                  </a>
+                )}
               </h3>
               <div className="text-sm text-zinc-700 dark:text-zinc-400">
                 {dates}
@@ -255,6 +355,13 @@ const GridItem = ({
           </div>
         </div>
       </div>
+      {privateNotice && isPrivateNoticeOpen && (
+        <PrivateProjectModal
+          notice={privateNotice}
+          projectTitle={title}
+          onClose={closePrivateNotice}
+        />
+      )}
     </motion.li>
   )
 }

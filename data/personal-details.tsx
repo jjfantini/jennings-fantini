@@ -17,6 +17,11 @@ export type ProjectEasyInstall = {
   text: string;
 };
 
+export type ProjectPrivateNotice = {
+  title: string;
+  body: string;
+};
+
 export const DATA = {
   name: "Jennings Fantini",
   initials: "JF",
@@ -329,11 +334,16 @@ export const DATA = {
       title: "AI-Native Real Estate Platform",
       icon: <House className="h-4 w-4 text-amber-400 dark:text-amber-200" />,
       borderColor: "border-amber-400 dark:border-amber-200",
-      href: "https://github.com/albus-consulting/sku-ops",
+      href: "",
       dates: "2026 - Present",
       active: true,
       private: true,
       usesAI: true,
+      privateNotice: {
+        title: "Private client project",
+        body:
+          "This platform was built privately for a client, so there is no public website or source repository to open. The card covers the product scope, workflow, and technical stack without exposing client code or deployment details.",
+      },
       description:
         "Built an AI-native material management platform for a vertically integrated real estate company spanning property management, brokerage, maintenance, and inventory. Tenants submit maintenance requests, technicians check stocked parts before dispatch, and operations can turn completed work into invoices while realtime inventory, purchasing, and AI-assisted document workflows keep the business in sync.",
       technologies: [
@@ -350,13 +360,7 @@ export const DATA = {
         "📦 Pixi",
         "🎨 Tailwind CSS",
       ],
-      links: [
-        {
-          type: "Source",
-          href: "https://github.com/albus-consulting/sku-ops",
-          icon: <Icons.github className="size-3" />,
-        },
-      ],
+      links: [],
       image: "",
       video: "",
     },
